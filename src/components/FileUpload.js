@@ -6,24 +6,36 @@ import Axios from "axios";
 
 function FileUpload() {
 
-  const [file, setFile] = useState();
-  const [fileName, setFileName] = useState('');
+
+ 
+  const [filesArr, setFilesArr] = useState([]);
 
   const saveFile = (e) => {
-    setFile(e.target.files[0]);
-    setFileName(e.target.files[0].name);
+    Object.keys(e.target.files).forEach(key => {
+
+      setFilesArr((arr) => [ ...arr, { file: e.target.files[key]}]);
+
+    }
+    ) 
   }
 
   const uploadFile = async (e) => {
     const formData = new FormData();
-    formData.append("file", file);
-    formData.append("fileName", fileName);
+
+    filesArr.forEach(file => {
+      formData.append('files', file.file);
+      console.log(file.file);
+    })
+
+    for (var pair of formData.entries()) {
+      console.log(pair[0]+ ', ' + pair[1]); 
+  }
     Axios.post("http://localhost:3001/upload", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    }).then(() => {
-      console.log("success");
+    }).then(res => {
+      console.log(res.data);
     });
   };
+
 //form from Bootstrap
 // https://react-bootstrap.github.io/forms/form-control/
     return (

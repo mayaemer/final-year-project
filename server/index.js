@@ -5,7 +5,7 @@ const mongoose = require("mongoose");
 const app = express();
 const cors = require("cors");
 const multer  = require('multer')
-const upload = multer({ dest: './public/data/uploads/' });
+const upload = multer({ dest: 'uploads/' });
 
 const PORT = process.env.PORT || 3001;
 
@@ -25,19 +25,19 @@ mongoose.connect( 'mongodb+srv://mayaeoc:250897@cluster0.suy8qu3.mongodb.net/eLe
   }
 );
 
-app.get('/', async (req, res) => {
-  const files = new FilesModel({fileName: 'Text.txt'});
-  try {
-    await files.save();
-    res.send('inserted data');
+// function to upload files to database
+app.post('/upload', upload.array('files'), (req, res) => {
+  console.log(req.files);
+  const files = new FilesModel({
+    _id: new mongoose.Types.ObjectId(),
+    fileCollection: req.files
+  });
+  try{
+    files.save();
+    res.json({ message: "Successfully uploaded files" });
   } catch(e){
     console.log(e);
   }
-})
-
-
-app.post('/upload', upload.single('file'), (req, res) => {
-  console.log(req.file);
 })
 
 app.listen(PORT, () => {
