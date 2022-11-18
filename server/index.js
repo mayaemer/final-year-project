@@ -25,6 +25,24 @@ mongoose.connect( 'mongodb+srv://mayaeoc:250897@cluster0.suy8qu3.mongodb.net/eLe
   }
 );
 
+// app.get("/read"), async (req, res) => {
+//   // FilesModel.find({}, (err, result) => {
+//   //   if (err){
+//   //     res.send(err)
+//   //   }
+//   //   res.send(result);
+//   // });
+// }
+
+app.get("/readfiles", (req, res) => {
+  FilesModel.find({}, (err, result) => {
+    if (err){
+      res.send(err)
+    }
+    res.send(result);
+  })
+});
+
 // function to upload files to database
 app.post('/upload', upload.array('files'), (req, res) => {
   console.log(req.files);
@@ -38,7 +56,11 @@ app.post('/upload', upload.array('files'), (req, res) => {
   } catch(e){
     console.log(e);
   }
-})
+});
+
+
+
+
 
 app.listen(PORT, () => {
   console.log(`Server listening on ${PORT}`);
