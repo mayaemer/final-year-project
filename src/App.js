@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 
 import Home from "./pages/Home";
 import FileUpload from './pages/FileUpload';
+import ViewFile from './pages/ViewFile';
+
 
 import NavBar from './components/NavBar';
 
@@ -16,7 +18,7 @@ function App() {
         <Routes>
           <Route path='/' element={<Home />} />
           <Route path='/Content' element={<FileUpload />} />
-
+          <Route path="/file/:selectedFile" element={<ViewFile />} />
         </Routes>
       </Router>
       

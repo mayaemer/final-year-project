@@ -1,6 +1,7 @@
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import { useState, useRef } from 'react';
+import { Link } from "react-router-dom";
 import Axios from "axios";
 
 
@@ -9,33 +10,34 @@ function FileUpload() {
   const [filesArr, setFilesArr] = useState([]);
   const fileSelect = useRef(null);
 
+  const [fileList, setFileList] = useState([]);
+  
+
+
  
   const showFile = () => {
     Axios.get("http://localhost:3001/readfiles").then((response) => {
       console.log(response.data);
+      Object.keys(response.data).forEach(key => {
+
+        Object.keys(response.data[key].fileCollection).forEach(fileKey => {
+
+           setFileList((arr) => [ ...arr, { file: response.data[key].fileCollection[fileKey]}]);
+
+         });
+        
+       }
+     ) 
+      
     });
   };
-
-  // const showFile = async (e) => {
-  //   Axios.get("http://localhost:3001/read").then(res => {
-  //   try{
-  //     console.log(res)
-  //   }
-  //   catch(e){
-  //     console.log(e);
-  //   }
-  //   }
-  //   )
-  // };
 
   const saveFile = (e) => {
     Object.keys(e.target.files).forEach(key => {
 
       setFilesArr((arr) => [ ...arr, { file: e.target.files[key]}]);
-
     }
     ) 
-    
   }
 
   const uploadFile = async (e) => {
@@ -50,7 +52,7 @@ function FileUpload() {
 
     Axios.post("http://localhost:3001/upload", formData, {
     }).then(res => {
-      alert(res.data);
+      console.log(res.data);
     });
   };
 
@@ -68,7 +70,13 @@ function FileUpload() {
 
         <Button type='submit' onClick={showFile}>Show</Button>
 
-        
+        {fileList.map((val, key) => {
+          return (
+          <Link to={"/file/" + val.file.filename} key={key}>
+                    {val.file.originalname}
+          </Link>
+          )
+        })}
 
       </>
     );
