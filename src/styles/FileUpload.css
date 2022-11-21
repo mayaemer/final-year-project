@@ -1,0 +1,17 @@
+#uploadForm {
+    margin-top: 1em;
+    width: 60%;
+    display: inline-block;
+}
+
+#fileList {
+    width: 60%;
+    display: inline-block;
+    margin-top: 1em;
+
+
+}
+
+#button {
+    margin-right : 0.5em;
+}

@@ -3,6 +3,8 @@ import Button from 'react-bootstrap/Button';
 import { useState, useRef } from 'react';
 import { Link } from "react-router-dom";
 import Axios from "axios";
+import { ListGroup, ListGroupItem } from 'react-bootstrap';
+import '../styles/FileUpload.css';
 
 
 function FileUpload() {
@@ -60,24 +62,31 @@ function FileUpload() {
 // https://react-bootstrap.github.io/forms/form-control/
     return (
       <>
+      <div id='uploadForm'>
         <Form.Group controlId="formFileMultiple" className="mb-3">
           <Form.Label>Select files to be uploaded </Form.Label>
           <Form.Control type="file" multiple  ref={fileSelect} onChange={saveFile}/>
         </Form.Group>
-        <Button type='submit' onClick={uploadFile}>
+        <Button type='submit' onClick={uploadFile} id='button'>
                 Save
         </Button>
 
-        <Button type='submit' onClick={showFile}>Show</Button>
+        <Button type='submit' onClick={showFile} id='button'>Show</Button>
+        </div>
 
+        <div id='fileList'>
         {fileList.map((val, key) => {
           return (
-          <Link to={"/file/" + val.file.filename} key={key}>
+          <ListGroup>
+            <ListGroupItem>
+              <Link to={"/file/" + val.file.filename} key={key}>
                     {val.file.originalname}
-          </Link>
+              </Link>
+          </ListGroupItem>
+          </ListGroup>
           )
         })}
-
+        </div>
       </>
     );
   }

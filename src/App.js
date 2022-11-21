@@ -1,13 +1,10 @@
 import './App.css';
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-
 import Home from "./pages/Home";
 import FileUpload from './pages/FileUpload';
 import ViewFile from './pages/ViewFile';
-
-
 import NavBar from './components/NavBar';
-
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 
 function App() {

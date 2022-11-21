@@ -9,11 +9,8 @@ function ViewFile() {
     { uri: require("/server/uploads/" + selectedFile)}
   ];
 
-
-
   return (
     <div className="App">
-
     <DocViewer documents={docs}  pluginRenderers={DocViewerRenderers}/>
     </div>
   )
