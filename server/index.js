@@ -5,7 +5,21 @@ const mongoose = require("mongoose");
 const app = express();
 const cors = require("cors");
 const multer = require("multer");
-const upload = multer({ dest: "uploads/" });
+const path = require("path");
+
+
+const storage = multer.diskStorage({
+  destination: (req, file, callBack) => {
+    callBack(null, 'uploads/');
+  },
+  filename: (req, file, callBack) => {
+    console.log(file);
+    callBack(null, Date.now() + path.extname(file.originalname));
+  },
+});
+
+const upload = multer({ storage: storage });
+
 
 const PORT = process.env.PORT || 3001;
 
@@ -24,7 +38,9 @@ mongoose.connect(
   {
     useNewUrlParser: true,
   }
-);
+)
+.then(()=>console.log('connected'))
+.catch(e=>console.log(e));;
 
 // app.get("/read"), async (req, res) => {
 //   // FilesModel.find({}, (err, result) => {
@@ -44,10 +60,7 @@ app.get("/readfiles", (req, res) => {
   });
 });
 
-app.post("/readselectedfile", (req, res) => {
-  const selectedFile = req.query.selectedFile;
-  // need to find how to retrieve file from within a collection of collections
-});
+
 
 // function to upload files to database
 app.post("/upload", upload.array("files"), (req, res) => {
