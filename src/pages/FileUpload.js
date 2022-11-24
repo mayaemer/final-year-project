@@ -13,9 +13,6 @@ function FileUpload() {
   const fileSelect = useRef(null);
 
   const [fileList, setFileList] = useState([]);
-  
-
-
  
   const showFile = () => {
     Axios.get("http://localhost:3001/readfiles").then((response) => {

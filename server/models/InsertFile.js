@@ -10,3 +10,4 @@ const fileSchema = mongoose.Schema({
 // name of collection to be created/ inserted into
 const File = mongoose.model('fileUploads', fileSchema);
 module.exports = File;
+

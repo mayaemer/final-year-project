@@ -4,9 +4,9 @@ const express = require("express");
 const mongoose = require("mongoose");
 const app = express();
 const cors = require("cors");
+
 const multer = require("multer");
 const path = require("path");
-
 
 const storage = multer.diskStorage({
   destination: (req, file, callBack) => {
@@ -23,7 +23,6 @@ const upload = multer({ storage: storage });
 
 const PORT = process.env.PORT || 3001;
 
-const FilesModel = require("./models/InsertFile");
 
 app.use(
   cors({
@@ -51,16 +50,7 @@ mongoose.connect(
 //   // });
 // }
 
-app.get("/readfiles", (req, res) => {
-  FilesModel.find({}, (err, result) => {
-    if (err) {
-      res.send(err);
-    }
-    res.send(result);
-  });
-});
-
-
+const FilesModel = require("./models/InsertFile");
 
 // function to upload files to database
 app.post("/upload", upload.array("files"), (req, res) => {
@@ -75,6 +65,15 @@ app.post("/upload", upload.array("files"), (req, res) => {
   } catch (e) {
     console.log(e);
   }
+});
+
+app.get("/readfiles", (req, res) => {
+  FilesModel.find({}, (err, result) => {
+    if (err) {
+      res.send(err);
+    }
+    res.send(result);
+  });
 });
 
 app.listen(PORT, () => {
