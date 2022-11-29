@@ -1,16 +1,16 @@
 // server/index.js
 
 const express = require("express");
-const mongoose = require("mongoose");
 const app = express();
 const cors = require("cors");
-
 const multer = require("multer");
 const path = require("path");
+const {MongoClient} = require('mongodb');
+
 
 const storage = multer.diskStorage({
   destination: (req, file, callBack) => {
-    callBack(null, 'uploads/');
+    callBack(null, "uploads/");
   },
   filename: (req, file, callBack) => {
     console.log(file);
@@ -20,9 +20,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-
 const PORT = process.env.PORT || 3001;
-
 
 app.use(
   cors({
@@ -32,35 +30,25 @@ app.use(
   })
 );
 
-mongoose.connect(
-  "mongodb+srv://mayaeoc:250897@cluster0.suy8qu3.mongodb.net/eLearningDatabase?retryWrites=true&w=majority",
-  {
-    useNewUrlParser: true,
-  }
-)
-.then(()=>console.log('connected'))
-.catch(e=>console.log(e));;
 
-// app.get("/read"), async (req, res) => {
-//   // FilesModel.find({}, (err, result) => {
-//   //   if (err){
-//   //     res.send(err)
-//   //   }
-//   //   res.send(result);
-//   // });
-// }
+const uri = "mongodb+srv://mayaeoc:250897@cluster0.suy8qu3.mongodb.net/eLearningDatabase?retryWrites=true&w=majority";
 
-const FilesModel = require("./models/InsertFile");
+const client = new MongoClient(uri);
+
+try {
+  client.connect();
+  console.log('connected');
+
+} catch (e) {
+  console.error(e);
+}
 
 // function to upload files to database
 app.post("/upload", upload.array("files"), (req, res) => {
   console.log(req.files);
-  const files = new FilesModel({
-    _id: new mongoose.Types.ObjectId(),
-    fileCollection: req.files,
-  });
+
   try {
-    files.save();
+    client.db('eLearningDatabase').collection('fileuploads').insertMany(req.files);
     res.json({ message: "Successfully uploaded files" });
   } catch (e) {
     console.log(e);
@@ -68,12 +56,11 @@ app.post("/upload", upload.array("files"), (req, res) => {
 });
 
 app.get("/readfiles", (req, res) => {
-  FilesModel.find({}, (err, result) => {
-    if (err) {
-      res.send(err);
-    }
-    res.send(result);
-  });
+  client.db('eLearningDatabase').collection('fileuploads').find({}).toArray(
+    function(err, result) {
+      if (err) throw err;
+      res.send(result);}
+  );
 });
 
 app.listen(PORT, () => {

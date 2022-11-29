@@ -16,12 +16,7 @@ function FileUpload() {
     Axios.get("http://localhost:3001/readfiles").then((response) => {
       console.log(response.data);
       Object.keys(response.data).forEach((key) => {
-        Object.keys(response.data[key].fileCollection).forEach((fileKey) => {
-          setFileList((arr) => [
-            ...arr,
-            { file: response.data[key].fileCollection[fileKey] },
-          ]);
-        });
+        setFileList((arr) => [ ...arr, { file: response.data[key]}]);
       });
     });
   };
@@ -64,7 +59,7 @@ function FileUpload() {
   return (
     <>
       <div id="uploadForm">
-        <Form.Group controlId="formFileMultiple" className="mb-3">
+        <Form.Group controlId="formFileMultiple" data-testid='fileUpload' className="mb-3">
           <Form.Label>Select files to be uploaded </Form.Label>
           <Form.Control
             type="file"
