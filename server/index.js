@@ -7,7 +7,8 @@ const multer = require("multer");
 const path = require("path");
 const {MongoClient} = require('mongodb');
 
-
+// stack overflow https://stackoverflow.com/questions/31592726/how-to-store-a-file-with-file-extension-with-multer
+// adds extension of file
 const storage = multer.diskStorage({
   destination: (req, file, callBack) => {
     callBack(null, "uploads/");
@@ -44,7 +45,7 @@ try {
 }
 
 // function to upload files to database
-app.post("/upload", upload.array("files"), (req, res) => {
+app.post("/upload", upload.array("files"), async(req, res) => {
   console.log(req.files);
 
   try {
@@ -58,9 +59,14 @@ app.post("/upload", upload.array("files"), (req, res) => {
 app.get("/readfiles", (req, res) => {
   client.db('eLearningDatabase').collection('fileuploads').find({}).toArray(
     function(err, result) {
-      if (err) throw err;
-      res.send(result);}
-  );
+      try{
+        res.send(result);
+      }
+      catch(e){
+        console.log(e)
+      }
+      
+    })
 });
 
 app.listen(PORT, () => {
