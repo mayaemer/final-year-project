@@ -9,6 +9,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 
 function App() {
   return (
+    // routes user to various pages when link is clicked
     <div className="App">
       <Router>
         <NavBar/>

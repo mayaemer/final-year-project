@@ -31,9 +31,8 @@ app.use(
   })
 );
 
-
+// connect to mongodb
 const uri = "mongodb+srv://mayaeoc:250897@cluster0.suy8qu3.mongodb.net/eLearningDatabase?retryWrites=true&w=majority";
-
 const client = new MongoClient(uri);
 
 try {
@@ -56,6 +55,7 @@ app.post("/upload", upload.array("files"), async(req, res) => {
   }
 });
 
+// read all entries from file uploads collection
 app.get("/readfiles", (req, res) => {
   client.db('eLearningDatabase').collection('fileuploads').find({}).toArray(
     function(err, result) {

@@ -7,6 +7,7 @@ import { ListGroup, ListGroupItem } from "react-bootstrap";
 import "../styles/FileUpload.css";
 
 function FileUpload() {
+
   const [filesArr, setFilesArr] = useState([]);
   const fileSelect = useRef(null);
   const [fileList, setFileList] = useState([]);
@@ -54,7 +55,7 @@ function FileUpload() {
     }
   };
 
-  //form from Bootstrap
+  //Form from bootstrap
   // https://react-bootstrap.github.io/forms/form-control/
   return (
     <>
