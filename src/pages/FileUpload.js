@@ -47,7 +47,7 @@ function FileUpload() {
       Axios.post("http://localhost:3001/upload", formData, {}).then((res) => {
         try {
           const response = res.data;
-          alert(response);
+          alert('Successfully uploaded');
         } catch (e) {
           console.log(e);
         }

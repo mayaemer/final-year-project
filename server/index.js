@@ -5,6 +5,9 @@ const app = express();
 const cors = require("cors");
 const multer = require("multer");
 const path = require("path");
+const bodyParser = require("body-parser");
+const bcrypt = require("bcrypt");
+const saltRounds = 10;
 const {MongoClient} = require('mongodb');
 
 // stack overflow https://stackoverflow.com/questions/31592726/how-to-store-a-file-with-file-extension-with-multer
@@ -30,6 +33,10 @@ app.use(
     credentials: true,
   })
 );
+
+app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
 
 // connect to mongodb
 const uri = "mongodb+srv://mayaeoc:250897@cluster0.suy8qu3.mongodb.net/eLearningDatabase?retryWrites=true&w=majority";
@@ -68,6 +75,12 @@ app.get("/readfiles", (req, res) => {
       
     })
 });
+
+app.post("/register", (req, res) => {
+  bcrypt.hash(req.body.Pass, saltRounds)
+  .then(hash => console.log(hash))
+  .catch(err => console.error(err.message))
+})
 
 app.listen(PORT, () => {
   console.log(`Server listening on ${PORT}`);
