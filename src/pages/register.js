@@ -2,24 +2,11 @@ import { useState } from "react";
 import Card from "@mui/material/Card";
 import { TextField } from "@mui/material";
 import MenuItem from "@mui/material/MenuItem";
-import { Formik, Form, Field, ErrorMessage } from "formik";
-import { useFormik } from "formik";
 import Axios from "axios";
+import { registrationSchema } from "../Validations/Validation";
 
 // this page is empty at this point
 function Register() {
-
-  const {val, handleBlur, handleChange} = useFormik({
-    initialValues: {
-      Email:"",
-      Fname:"",
-      Sname:"",
-      Pass:"",
-      Confirm:"",
-      UserType:""
-    },
-  });
- 
   const usertype = [
     {
       value: "Teacher",
@@ -31,32 +18,51 @@ function Register() {
     },
   ];
 
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [firstName, setFirstName] = useState("");
   const [surName, setSurName] = useState("");
   const [userType, setUserType] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const handleSubmit = (event) => {
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    Axios.post("http://localhost:3001/register", {
+
+    const registrationData = {
       Email: email,
       Fname: firstName,
       Sname: surName,
       Pass: password,
       Confirm: confirmPassword,
       UserType: userType,   
+    };
 
-    }).then(function (res) {
-      console.log(res);
-    });
+    const validate = await registrationSchema.isValid(registrationData)
+    
+    if(validate === true){
+      setErrorMessage('');
+      try{
+      Axios.post("http://localhost:3001/register", registrationData).then(function (res) {
+        console.log(res);
+      });}
+      catch(e){
+        console.error(e);
+      }
+    }
+    else {
+      setErrorMessage('Data not valid');
+    }
+
+
   };
 
   return (
     <div>
       <Card variant="outlined">
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={(e) => handleSubmit(e)}>
             <TextField
               id="outlined-basic"
               label="Email"
@@ -102,6 +108,7 @@ function Register() {
               ))}
             </TextField>
             <button type="submit">Register</button>
+            <p>{errorMessage}</p>
           </form>
       </Card>
     </div>
