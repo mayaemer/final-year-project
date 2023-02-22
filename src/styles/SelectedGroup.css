@@ -1,0 +1,42 @@
+#groupCard {
+    display: block;
+    width: 85%;
+    margin: 50px;
+    padding: 20px;
+    margin: auto;
+    margin-top: 20px;
+}
+
+#paperOption {
+    width: 90%;
+}
+
+#paperImage {
+    width: 100%;
+    height: 50%;
+    border-radius: 3px 3px 0 0;
+}
+
+#groupTitle {
+    width: 85%;
+    display: grid;
+    font-size: 100%;
+    margin: auto;
+    color: white;
+    padding: 100px;
+}
+
+#settingsMenu {
+    margin-left: 6%;
+}
+
+#groupSettings {
+    width: 85%;
+    margin: 50px;
+    padding: 20px;
+
+} 
+
+#editBtn {
+    margin: 10px;
+}

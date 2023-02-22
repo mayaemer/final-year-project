@@ -1,18 +1,44 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Card from "@mui/material/Card";
 import { TextField } from "@mui/material";
 import { loginSchema } from "../Validations/Validation";
 import Axios from "axios";
+import { useNavigate } from "react-router";
+import Refresh from "../components/Refresh";
 
 // this page is empty at this point
 function Login() {
+
+  // navigation
+  const navigate = useNavigate();
+
+  // states
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [alert, setAlert] = useState("");
 
-  const handleSubmit = async(event) => {
-    event.preventDefault();
+  Axios.defaults.withCredentials = true;
+
+  // authenticates user, if authenticated navigate to home page
+  useEffect(() => {
+    Axios.get("http://localhost:3001/isAuthenticated", {
+      headers: {
+        "x-access-token": localStorage.getItem("token"),
+      },
+    }).then((response) => {
+      const authenticated = response.data;
+      if (authenticated === true) {
+        navigate("/home");
+      }
+    }, []);
+  });
+
+  // post login data to server to validate it against database records
+  // if successful add token to local storage
+  const handleSubmit = async(e) => {
+    e.preventDefault();
     const loginData = {
       Email: email,
       Pass: password
@@ -24,8 +50,13 @@ function Login() {
     setErrorMessage('');
     try{
     Axios.post("http://localhost:3001/login", loginData).then(function (res) {
-      console.log(res);
-    });}
+      if (res.data.message) {
+        setAlert(res.data.message);
+
+      } else {
+        localStorage.setItem("token", res.data.token);
+        Refresh();
+      }    });}
     catch(e){
       console.error(e);
     }
@@ -55,6 +86,7 @@ function Login() {
             <button type="submit">Login</button>
           </form>
           <p>{errorMessage}</p>
+          <p>{alert}</p>
           <div id="registerSection">
             <p>Dont have an account?</p>
             <Link to="/register" id="register">

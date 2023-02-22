@@ -5,8 +5,12 @@ import Home from "./pages/Home";
 import Register from "./pages/register";
 import FileUpload from './pages/FileUpload';
 import ViewFile from './pages/ViewFile';
-import NavBar from './components/NavBar';
+import Groups from './pages/Groups'
 import 'bootstrap/dist/css/bootstrap.min.css';
+import SelectedGroup from './pages/SelectedGroup';
+import Discover from './pages/Discover';
+import Questions from './pages/Questions';
+
 
 
 function App() {
@@ -17,8 +21,13 @@ function App() {
         <Routes>
           <Route path='/' element={<Login />} />
           <Route path='/register' element={<Register />} />
+          <Route path='/group/:selectedGroup' element={<SelectedGroup />}></Route>
+          <Route path='/home' element={<Home />} />
+          <Route path='/Groups' element={<Groups />} />
           <Route path='/Content' element={<FileUpload />} />
           <Route path="/file/:selectedFile" element={<ViewFile />} />
+          <Route path="/Discover" element={<Discover />} />
+          <Route path="/Questions/:groupId" element={<Questions />} />
         </Routes>
       </Router>
       
