@@ -1,0 +1,16 @@
+.savedQuestion {
+    background-color: #F8F8F8;
+    border: 1px solid lightgray;
+}
+
+#questionSection{
+    background-color: white;
+    margin: 2%;
+    border-radius: 25px;
+    border: 2px solid lightgrey;
+}
+
+#question {
+    width: 300%;
+}
+

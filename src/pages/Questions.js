@@ -30,6 +30,11 @@ function Questions() {
 
   const [questions, setQuestions] = useState([]);
 
+  const [comment, setComment] = useState({
+    commentBody: "",
+    questionId: "",
+  });
+
   const [questionData, setQuestionData] = useState({
     questionTitle: "",
     questionBody: "",
@@ -50,14 +55,62 @@ function Questions() {
     };
     Axios.post("http://localhost:3001/getQuestions", data).then((res) => {
       setQuestions(res.data);
+      console.log(res);
     });
   };
+
+  function formatId(email) {
+    let i;
+    let formatEmail = [];
+    let specialCharacters = [
+      "!",
+      '"',
+      "#",
+      "$",
+      "%",
+      "&",
+      "'",
+      "(",
+      ")",
+      "*",
+      "+",
+      ",",
+      ".",
+      "/",
+      ":",
+      ";",
+      "<",
+      "=",
+      ">",
+      "?",
+      "@",
+      "[",
+      "]",
+      "^",
+      "`",
+      "{",
+      "|",
+      "}",
+      "~",
+    ];
+    for (i = 0; i < email.length; i++) {
+      if (specialCharacters.includes(email[i])) {
+        formatEmail.push("\\");
+        formatEmail.push(email[i]);
+      } else {
+        formatEmail.push(email[i]);
+      }
+    }
+
+    const formattedEmail = formatEmail.toString().split(",").join("");
+    return formattedEmail;
+  }
 
   const getGroupData = () => {
     const data = { ID: groupId };
     Axios.post("http://localhost:3001/groupInfo", data).then((res) => {
       setGroupInfo(res.data);
-      $("#groupTitle").css("background-image", "url(" + res.data.image + ")");
+      $("#groupTitle").css("background-image", "url(" + res.data.image.image + ")");
       checkUser(res.data.members, res.data.creator);
     });
   };
@@ -66,6 +119,10 @@ function Questions() {
     Axios.get("http://localhost:3001/check").then((response) => {
       if (response.data.loggedIn === true) {
         setUserInfo(response.data);
+        const email = response.data.user._id;
+        const formattedEmail = formatId(email);
+        const settingsId = "#" + formattedEmail;
+        $(settingsId).show();
       }
     });
   };
@@ -91,29 +148,48 @@ function Questions() {
 
   const submitQuestion = (e) => {
     e.preventDefault();
-
+    const handleData = postQuestion;
     setLoading(true);
     handleVisibility();
 
     const data = {
       title: questionData.questionTitle,
-      questionBody: questionData.questionBody,
+      textBody: questionData.questionBody,
       author: userInfo.user.Fname + " " + userInfo.user.Sname,
       authorEmail: userInfo.user._id,
       group: groupInfo._id,
     };
-    setTimeout(() => checkProfanity(data), 1000);
+    setTimeout(() => checkProfanity(data, handleData), 1000);
   };
 
-  const checkProfanity = (data) => {
+  const handleKey = (e) => {
+    if (e.key === "Enter") {
+      const data = {
+        poster: userInfo.user._id,
+        textBody: comment.commentBody,
+        group: groupInfo._id,
+        questionId: comment.questionId,
+      };
+
+      console.log(data);
+      const handleData = postComment;
+      checkProfanity(data, handleData);
+    }
+  };
+
+  const checkProfanity = (data, handleData) => {
     Axios.post("http://localhost:3001/checkProfanity", data)
       .then((result) => {
         if (result.data.includes(1)) {
           console.log(result.data);
-          handleProfanity();
+
+          // const testFun = handleProfanity;
+          // testFun();
+          handleProfanity(data);
         } else {
           console.log(result.data);
-          postQuestion();
+          // postQuestion();
+          handleData();
         }
       })
       .catch((e) => console.log(e));
@@ -122,7 +198,7 @@ function Questions() {
   const postQuestion = () => {
     const data = {
       title: questionData.questionTitle,
-      questionBody: questionData.questionBody,
+      textBody: questionData.questionBody,
       author: userInfo.user.Fname + " " + userInfo.user.Sname,
       authorEmail: userInfo.user._id,
       group: groupInfo._id,
@@ -135,7 +211,25 @@ function Questions() {
       .catch((e) => console.log(e));
   };
 
-  const handleProfanity = () => {
+  const postComment = async () => {
+    const data = {
+      textBody: comment.commentBody,
+      author: userInfo.user.Fname + " " + userInfo.user.Sname,
+      authorEmail: userInfo.user._id,
+      group: groupInfo._id,
+      question: comment.questionId,
+    };
+
+    await Axios.post("http://localhost:3001/postComment", data)
+      .then((result) => {
+        console.log(result);
+        Refresh();
+      })
+      .catch((e) => console.log(e));
+  };
+
+  const handleProfanity = (profaneData) => {
+    console.log(profaneData);
     setLoading(false);
 
     setAddVisible({
@@ -148,7 +242,7 @@ function Questions() {
 
     const data = {
       title: questionData.questionTitle,
-      questionBody: questionData.questionBody,
+      textBody: profaneData.textBody,
       author: userInfo.user.Fname + " " + userInfo.user.Sname,
       authorEmail: userInfo.user._id,
       group: groupInfo._id,
@@ -225,7 +319,7 @@ function Questions() {
             <MenuList>
               <h4>Categories</h4>
               {questions.map((title) => (
-                <MenuItem>{title.questionTitle}</MenuItem>
+                <MenuItem>{title.title}</MenuItem>
               ))}
             </MenuList>
           </Card>
@@ -276,46 +370,83 @@ function Questions() {
 
           {questions.map((question) => (
             <div>
-              <Card id={question._id}>
-                <h4>{question.questionTitle}</h4>
-                <Dropdown>
-                  <Dropdown.Toggle
-                    variant="light"
-                    id="dropdown-basic"
-                  ></Dropdown.Toggle>
+              <Card id="questionCard">
+                <div id={question._id}>
+                  <h4>{question.title}</h4>
+                  <div id={question.posterId} className="questionSettings">
+                    <Dropdown>
+                      <Dropdown.Toggle
+                        variant="light"
+                        id="dropdown-basic"
+                      ></Dropdown.Toggle>
 
-                  <Dropdown.Menu>
-                    <Dropdown.Item name={question._id} onClick={handleEdit}>
-                      Edit Post
-                    </Dropdown.Item>
-                    <Dropdown.Item name={question._id} onClick={handleDelete}>
-                      Delete Post
-                    </Dropdown.Item>
-                  </Dropdown.Menu>
-                </Dropdown>
-                <hr></hr>
-                <p>{question.questionBody}</p>
-                <p>{question.poster}</p>
-                <p>{question.dateTime}</p>
-              </Card>
-              <Card id="editForm" class={question._id}>
-                <form onSubmit={submitQuestion}>
-                  <TextField
-                    id="outlined-basic"
-                    variant="outlined"
-                    name="questionTitle"
-                    onChange={handleChange}
-                    value={question.questionTitle}
-                  />
-                  <TextField
-                    id="outlined-password-input"
-                    type="outlined"
-                    name="questionBody"
-                    value={question.questionBody}
-                    onChange={handleChange}
-                  />
-                  <button type="submit">Save</button>
-                </form>
+                      <Dropdown.Menu>
+                        <Dropdown.Item name={question._id} onClick={handleEdit}>
+                          Edit Post
+                        </Dropdown.Item>
+                        <Dropdown.Item
+                          name={question._id}
+                          onClick={handleDelete}
+                        >
+                          Delete Post
+                        </Dropdown.Item>
+                      </Dropdown.Menu>
+                    </Dropdown>
+                  </div>
+                  <hr></hr>
+                  <p>{question.textBody}</p>
+                  <p>{question.poster}</p>
+                  <p>{question.dateTime}</p>
+                </div>
+                <div id="editForm" class={question._id}>
+                  <form onSubmit={submitQuestion}>
+                    <TextField
+                      id="outlined-multiline-flexible"
+                      multiline
+                      maxRows={4}
+                      defaultValue={question.questionTitle}
+                      onChange={handleChange}
+                    />
+                    <TextField
+                      id="outlined-multiline-flexible"
+                      multiline
+                      maxRows={4}
+                      defaultValue={question.questionBody}
+                      onChange={handleChange}
+                    />
+                    <button type="submit">Save</button>
+                  </form>
+                </div>
+                <div>
+                  <hr></hr>
+                  <h6>Comments</h6>
+
+                  {question.comments.map((comment) => (
+                    <div id="commentSec">
+                      <p id='commenter'>{comment[0][1]}</p>
+                      <p>{comment[0][0]}</p>
+                      <p>{comment[0][3]}</p>
+                    </div>
+                  ))}
+                  <form>
+                    <TextField
+                      id="filled-multiline-flexible"
+                      multiline
+                      placeholder="Write a comment.."
+                      maxRows={4}
+                      variant="filled"
+                      name={question._id}
+                      onChange={(e) =>
+                        setComment({
+                          ...comment,
+                          commentBody: e.target.value,
+                          questionId: e.target.name,
+                        })
+                      }
+                      onKeyDown={handleKey}
+                    />
+                  </form>
+                </div>
               </Card>
             </div>
           ))}

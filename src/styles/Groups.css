@@ -1,3 +1,11 @@
+body{
+    background-color: #F8F8F8 !important;
+}
+
+#formBtn{
+    margin-left: 90%;
+}
+
 #groupsCard {
     display: block;
     width: 70%;
@@ -7,20 +15,55 @@
 
 #createForm {
     display: block;
-    width: 50%;
+    width: 70%;
     margin: 50px;
     padding: 20px;}
 
 #groupImage {
     width: 100%;
-    height: 50%;
+    height: 80%;
     border-radius: 3px 3px 0 0;
 }
 
 #groupPaper {
     width: 90%;
+    height: 200px;
+} 
+
+#imageSelection{
+    width: 60%;
+    margin: auto;
 }
 
+.form{
+    width:50%;
+}
+
+.selectedImg{
+    width: 60% !important;
+    margin: auto;
+    margin-top: 1%;
+    margin-bottom: 1%;
+
+}
+
+#invalid{
+    width: 50%;
+    margin: auto;    
+}
+
+#resultAlert {
+    width: 60%;
+    margin: auto;
+}
+
+#resultText{
+    margin: auto;
+    text-align: center;
+}
+
+
+/* 
 #groupSection {
     display: grid; 
     grid-template-columns: 25% 25% 25% 25%; 
@@ -58,4 +101,4 @@
     #col4 { grid-area: col-4;}
     
 }
-    
+     */

@@ -10,6 +10,8 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import SelectedGroup from './pages/SelectedGroup';
 import Discover from './pages/Discover';
 import Questions from './pages/Questions';
+import Quiz from './pages/Quiz';
+import SelectedQuiz from './pages/SelectedQuiz';
 
 
 
@@ -28,6 +30,8 @@ function App() {
           <Route path="/file/:selectedFile" element={<ViewFile />} />
           <Route path="/Discover" element={<Discover />} />
           <Route path="/Questions/:groupId" element={<Questions />} />
+          <Route path="/Quiz/:groupId" element={<Quiz />} />
+          <Route path="/Quiz/:groupId/:quizId" element={<SelectedQuiz />} />
         </Routes>
       </Router>
       

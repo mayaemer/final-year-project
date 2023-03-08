@@ -10,7 +10,7 @@ function Home() {
   const checkUser = () => {
     Axios.get("http://localhost:3001/check").then((response) => {
       if (response.data.loggedIn === true) {
-        console.log(response.data.user)
+        console.log('User logged in')
       }
     });
   };

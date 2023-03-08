@@ -13,7 +13,7 @@ import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 import SettingsIcon from "@mui/icons-material/Settings";
 import MenuList from "@mui/material/MenuList";
 import MenuItem from "@mui/material/MenuItem";
-import { TextField } from "@mui/material";
+import { TextField, Button} from "@mui/material";
 import Refresh from "../components/Refresh";
 import {
   updateGroupNameSchema,
@@ -47,7 +47,7 @@ function SelectedGroup() {
   const [passErrorMessage, setPassErrorMessage] = useState("");
 
   const [membersView, setMembersView] = useState(false);
-  const [publicView, setPublicView] = useState(true);
+  const [publicView, setPublicView] = useState(false);
   const [joinForm, setJoinForm] = useState(false);
   const [creatorSettings, setCreatorSettings] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -63,7 +63,7 @@ function SelectedGroup() {
     Axios.post("http://localhost:3001/groupInfo", data).then((res) => {
       setGroupInfo(res.data);
       setGroupName(res.data.groupName);
-      $("#groupTitle").css("background-image", "url(" + res.data.image + ")");
+      $("#groupTitle").css("background-image", "url(" + res.data.image.image + ")");
       checkUser(res.data.members, res.data.creator);
     });
   };
@@ -73,7 +73,8 @@ function SelectedGroup() {
       if (response.data.loggedIn === true) {
         setEmail(response.data.user._id);
         const user = response.data.user._id;
-        if (members.includes(user) === true) {
+        console.log(members)
+        if (members.includes(user)) {
           setMembersView(true);
           setPublicView(false);
         } else if (creator === user) {
@@ -81,7 +82,6 @@ function SelectedGroup() {
           setPublicView(false);
           setCreatorSettings(true);
         } else {
-          setMembersView(false);
           setPublicView(true);
         }
       }
@@ -235,6 +235,7 @@ function SelectedGroup() {
       .catch((e) => console.log(e));
   };
 
+
   useEffect(() => {
     Axios.get("http://localhost:3001/isAuthenticated", {
       headers: {
@@ -316,7 +317,7 @@ function SelectedGroup() {
                   </Link>
                 </Grid>
                 <Grid item lg={3} md={3} xs={6}>
-                  <Link to={"/quiz"} id="quizLink">
+                  <Link to={"/Quiz/" + groupInfo._id} id="quizLink">
                     <Paper id="paperOption">
                       <img
                         id="paperImage"
@@ -354,8 +355,11 @@ function SelectedGroup() {
                         <Grid item lg={4} md={4} xs={12} id="id">
                           <p>Group ID</p>
                         </Grid>
-                        <Grid item lg={5} md={8} xs={12} id="id">
+                        <Grid item lg={4} md={4} xs={12} id="id">
                           <p>{groupInfo._id}</p>
+                        </Grid>
+                        <Grid item lg={4} md={4} xs={12}>
+                          <Button variant="outlined" onClick={() => {navigator.clipboard.writeText(groupInfo._id);}}>Copy</Button>
                         </Grid>
 
                         <Grid item lg={4} md={4} xs={12} id="name">
@@ -367,7 +371,7 @@ function SelectedGroup() {
                               <p>{groupInfo.groupName}</p>
                             </Grid>
                             <Grid item lg={6} md={6} xs={12}>
-                              <button onClick={handleEditName}>Edit</button>
+                              <Button variant="outlined" onClick={handleEditName}>Edit</Button>
                             </Grid>
                           </Grid>
                         )}
@@ -381,12 +385,12 @@ function SelectedGroup() {
                               />
                             </Grid>
                             <Grid item lg={6} md={6} xs={12} id="submit">
-                              <button id="editBtn" onClick={saveUpdate}>
+                              <Button id="editBtn" variant="outlined" onClick={saveUpdate}>
                                 Save
-                              </button>
-                              <button id="editBtn" onClick={cancelNameUpdate}>
+                              </Button>
+                              <Button id="editBtn" variant="outlined" onClick={cancelNameUpdate}>
                                 Cancel
-                              </button>
+                              </Button>
                             </Grid>
                           </Grid>
                         )}
@@ -399,11 +403,11 @@ function SelectedGroup() {
                         {showPass && (
                           <Grid lg={8} item container id="test">
                             <Grid item lg={6} md={6} xs={12}>
-                              <p>{groupInfo.password}</p>
+                              <p>********</p>
                             </Grid>
 
                             <Grid item lg={6} md={6} xs={12}>
-                              <button onClick={handleEditPass}>Edit</button>
+                              <Button variant="outlined" onClick={handleEditPass}>Edit</Button>
                             </Grid>
                           </Grid>
                         )}
@@ -417,12 +421,12 @@ function SelectedGroup() {
                               />
                             </Grid>
                             <Grid item lg={6} md={6} xs={12} id="submit">
-                              <button id="editBtn" onClick={saveUpdatedPass}>
+                              <Button id="editBtn" variant="outlined" onClick={saveUpdatedPass}>
                                 Save
-                              </button>
-                              <button id="editBtn" onClick={cancelPassUpdate}>
+                              </Button>
+                              <Button id="editBtn" variant="outlined" onClick={cancelPassUpdate}>
                                 Cancel
-                              </button>
+                              </Button>
                             </Grid>
                           </Grid>
                         )}
@@ -433,9 +437,9 @@ function SelectedGroup() {
                       {deleteBtn && (
                         <Grid lg={12} item container>
                           <Grid item lg={12} md={12} xs={12}>
-                            <button onClick={showConfirmDelete}>
+                            <Button onClick={showConfirmDelete} variant="outlined">
                               Delete Group
-                            </button>
+                            </Button>
                           </Grid>
                         </Grid>
                       )}
@@ -452,7 +456,7 @@ function SelectedGroup() {
                           </Grid>
 
                           <Grid item lg={6} md={6} xs={12}>
-                            <button onClick={handleDelete}>Delete</button>
+                            <Button variant="outlined" onClick={handleDelete}>Delete</Button>
                           </Grid>
                         </Grid>
                       )}
@@ -489,7 +493,7 @@ function SelectedGroup() {
             <h5>Group Description</h5>
             <hr />
             <p>group description</p>
-            <button onClick={showJoinForm}>Join Group</button>
+            <Button variant="outlined" onClick={showJoinForm}>Join Group</Button>
           </Card>
 
           <Card>
@@ -511,9 +515,9 @@ function SelectedGroup() {
               type="password"
               onChange={(e) => setGroupPass(e.target.value)}
             />
-            <button type="submit">Join Group</button>
+            <Button variant="outlined" type="submit">Join Group</Button>
           </form>
-          <button>Cancel</button>
+          <Button variant="outlined">Cancel</Button>
         </div>
       )}
     </div>

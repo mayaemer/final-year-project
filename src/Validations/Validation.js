@@ -41,3 +41,21 @@ export const updatePassSchema = yup.object().shape({
       "Must Contain 8 Characters, One Uppercase, One Lowercase, One Number and One Special Case Character"
     ),
 });
+
+export const createGroupSchema = yup.object().shape({
+  GroupName: yup.string().max(100, "Too many characters"),
+  Password: yup
+    .string()
+    .min(8, "Must have at least 8 characters")
+    .max(50, "Too many characters")
+    .required("Password is a required field")
+    .matches(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/,
+      "Must Contain 8 Characters, One Uppercase, One Lowercase, One Number and One Special Case Character"
+    ),
+  Confirm: yup
+    .string()
+    .min(8, "Must have at least 8 characters")
+    .max(50, "Too many characters")
+    .required("Must confirm password")
+});

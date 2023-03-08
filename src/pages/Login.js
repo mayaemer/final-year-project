@@ -50,9 +50,8 @@ function Login() {
     setErrorMessage('');
     try{
     Axios.post("http://localhost:3001/login", loginData).then(function (res) {
-      if (res.data.message) {
+      if (!res.data.auth) {
         setAlert(res.data.message);
-
       } else {
         localStorage.setItem("token", res.data.token);
         Refresh();

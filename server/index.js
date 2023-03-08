@@ -21,6 +21,7 @@ const { ObjectId } = require("mongodb");
 const BadWordsNext = require("bad-words-next");
 const en = require("bad-words-next/data/en.json");
 const { data } = require("jquery");
+const { emitWarning } = require("process");
 
 const profanityCheck = new BadWordsNext({ data: en });
 
@@ -242,7 +243,7 @@ app.post(
           bcrypt.compare(pass, result.Pass, (err, response) => {
             if (response) {
               const token = jwt.sign({ email }, "jwtSecret", {
-                expiresIn: 60 * 60 * 24 * 1000,
+                expiresIn: 3600,
               });
 
               req.session.user = result;
@@ -315,6 +316,7 @@ app.post("/createGroup", (req, res) => {
   const gName = req.body.GroupName;
   const pass = req.body.Password;
   const confirm = req.body.Confirm;
+  const gimage = req.body.Image;
 
   if (pass === confirm) {
     bcrypt.hash(pass, saltRounds, (err, hash) => {
@@ -327,9 +329,7 @@ app.post("/createGroup", (req, res) => {
           creator: email,
           members: [],
           content: [],
-          questions: [],
-          image:
-            "https://images.theconversation.com/files/45159/original/rptgtpxd-1396254731.jpg?ixlib=rb-1.1.0&q=45&auto=format&w=1356&h=668&fit=crop",
+          image: gimage,
         };
 
         db.collection("groups")
@@ -399,12 +399,17 @@ app.post("/searchGroups", (req, res) => {
 
 app.post("/joinGroup", (req, res) => {
   const id = ObjectId(req.body.group);
-
-  db.collection("groups")
+  bcrypt.hash(req.body.password, saltRounds, (err, hash) => {
+    if((err) => console.log(err));
+    console.log(hash)
+  })
+    db.collection("groups")
     .findOne({ _id: id })
     .then((result) => {
+      console.log(result.password)
       bcrypt.compare(req.body.password, result.password, (err, response) => {
-        if (response) {
+        if (response === true) {
+          console.log('test')
           addMember(req.body.user, id, res);
         } else {
           res.send({ message: "Incorrect password." });
@@ -431,7 +436,7 @@ app.post("/deleteGroup", (req, res) => {
     .then((result) => {
       bcrypt.compare(pass, result.password, (response, err) => {
         if (response) {
-          deleteGroup(id, res);
+          deleteItem(res, 'groups', id);
         } else {
           res.send(err);
         }
@@ -441,29 +446,39 @@ app.post("/deleteGroup", (req, res) => {
 });
 
 // function to delete group of specified id from database records
-function deleteGroup(id, res) {
-  db.collection("groups")
-    .deleteOne({ _id: id })
-    .then((result) => {
-      res.send(result);
-    })
-    .catch((e) => console.error(e));
-}
+// function deleteGroup(id, res) {
+//   db.collection("groups")
+//     .deleteOne({ _id: id })
+//     .then((result) => {
+//       res.send(result);
+//     })
+//     .catch((e) => console.error(e));
+// }
+
+app.post('/deleteQuiz', (req, res) => {
+  const id = ObjectId(req.body.qid);
+  deleteItem(res, 'quiz', id);
+})
+
 
 app.post("/checkProfanity", async (req, res) => {
-  if (
-    profanityCheck.check(req.body.questionBody) === false &&
-    profanityCheck.check(req.body.title) === false
-  ) {
-    pyProfanityCheck(res, req.body.title, req.body.body);
-  } else {
+  const body = req.body.textBody;
+  const title = req.body.title;
 
+  console.log(title);
+
+  if (profanityCheck.check(body) === false) {
+    if (title === "undefined" && profanityCheck.check(title) === false) {
+      pyProfanityCheck(res, body);
+    }
+
+    pyProfanityCheck(res, title, body);
+  } else {
     const currDateTime = getCurrentDateTime();
     const userEmail = req.body.authorEmail;
 
     const profaneInfo = {
-      questionTitle: req.body.title,
-      questionBody: req.body.questionBody,
+      profaneText: title + " " + body,
       dateTime: currDateTime,
       group: req.body.group,
     };
@@ -478,7 +493,7 @@ app.post("/handleProfanity", (req, res) => {
 
   const profaneInfo = {
     questionTitle: req.body.title,
-    questionBody: req.body.questionBody,
+    questionBody: req.body.textBody,
     dateTime: currDateTime,
     group: req.body.group,
   };
@@ -487,19 +502,33 @@ app.post("/handleProfanity", (req, res) => {
 });
 
 app.post("/postQuestion", (req, res) => {
-
   const currDateTime = getCurrentDateTime();
 
-
+  // console.log(req.body)
   const questionData = {
-    questionTitle: req.body.title,
-    questionBody: req.body.questionBody,
+    title: req.body.title,
+    textBody: req.body.textBody,
     poster: req.body.author,
+    posterId: req.body.authorEmail,
     dateTime: currDateTime,
     group: req.body.group,
     comments: [],
   };
   insertData(res, "questions", questionData);
+});
+
+app.post("/postComment", (req, res) => {
+  const currDateTime = getCurrentDateTime();
+  const qid = req.body.question;
+
+  const commentData = [
+    req.body.textBody,
+    req.body.author,
+    req.body.authorEmail,
+    currDateTime,
+    req.body.group,
+  ];
+  updateOneComment(res, "questions", qid, commentData);
 });
 
 app.post("/getQuestions", (req, res) => {
@@ -509,9 +538,47 @@ app.post("/getQuestions", (req, res) => {
 
 app.post("/deleteQuestion", (req, res) => {
   const questionID = ObjectId(req.body.ID);
-  deleteItem(res, 'questions', questionID)
-
+  deleteItem(res, "questions", questionID);
 });
+
+app.post("/createQuiz", (req, res) => {
+  const quizdata = {
+    title: req.body.title,
+    type: req.body.type,
+    start: req.body.start,
+    end: req.body.end,
+    questions: req.body.questions,
+    group: req.body.groupid,
+    correctAnswers : req.body.correctAns,
+    results : []
+  };
+
+  insertData(res, "quiz", quizdata);
+});
+
+app.post('/getQuiz', (req, res) => {
+   const groupid = req.body.ID;
+   findMany(res, 'quiz', groupid);
+})
+
+app.post('/getSelectedQuiz', (req, res) => {
+  const quizId = ObjectId(req.body.ID);
+  findSingle(res, 'quiz', quizId);
+})
+
+app.post('/sendAnswers', (req, res) => {
+  const qid = ObjectId(req.body.quiz);
+
+  const answersData = {
+    userFname: req.body.userFname,
+    userSname: req.body.userSname,
+    userEmail: req.body.userEmail,
+    answers: req.body.answers,
+    end: req.body.end,
+    grade: req.body.grade
+  }
+  updateQuiz(res, 'quiz', qid, answersData)
+})
 
 function pyProfanityCheck(res, title, body) {
   console.log(body);
@@ -536,6 +603,29 @@ function updateOne(res, collection, email, data) {
     });
 }
 
+function updateQuiz(res, collection, qid, data) {
+  db.collection(collection)
+    .updateOne({ _id: qid }, { $push: { results: [data] } })
+    .then((result) => {
+      res.send(result);
+    })
+    .catch((e) => {
+      console.error(e);
+    });
+}
+
+function updateOneComment(res, collection, id, data) {
+  const oid = ObjectId(id);
+  db.collection(collection)
+    .updateOne({ _id: oid }, { $push: { comments: [data] } })
+    .then((result) => {
+      res.send(result);
+    })
+    .catch((e) => {
+      console.error(e);
+    });
+}
+
 function insertData(res, collection, data) {
   db.collection(collection)
     .insertOne(data)
@@ -543,11 +633,11 @@ function insertData(res, collection, data) {
     .catch((e) => console.error(e));
 }
 
-function findSingle(collection, data) {
+function findSingle(res, collection, data) {
   db.collection(collection)
     .findOne({ _id: data })
     .then((result) => {
-      return result;
+      res.send(result);
     })
     .catch((e) => console.log(e));
 }
@@ -561,7 +651,7 @@ function findMany(res, collection, data) {
     });
 }
 
-function getCurrentDateTime(){
+function getCurrentDateTime() {
   const date = new Date();
   const currentDate =
     date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
@@ -571,11 +661,11 @@ function getCurrentDateTime(){
   return currDateTime;
 }
 
-function deleteItem(res, collection, data){
+function deleteItem(res, collection, data) {
   db.collection(collection)
-  .deleteOne({_id : data})
-  .then((result) => res.send(result))
-  .catch((e) => console.error(e))
+    .deleteOne({ _id: data })
+    .then((result) => res.send(result))
+    .catch((e) => console.error(e));
 }
 
 app.listen(PORT, () => {

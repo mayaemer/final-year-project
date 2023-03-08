@@ -12,10 +12,10 @@ import PaginationItem from "@mui/material/PaginationItem";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { useNavigate } from "react-router-dom";
-
+import Grid from "@mui/material/Grid";
+import "../styles/Groups.css";
 
 function Discover() {
-
   const navigate = useNavigate();
 
   const [groupData, setGroupData] = useState([]);
@@ -34,13 +34,12 @@ function Discover() {
 
   Axios.defaults.withCredentials = true;
 
-
   const checkUser = () => {
     Axios.get("http://localhost:3001/check").then((response) => {
       if (response.data.loggedIn === true) {
-        console.log(response.data.user)
-      }
+        console.log(response);
 
+      }
     });
   };
 
@@ -67,7 +66,6 @@ function Discover() {
       .catch((e) => console.log(e));
   };
 
-
   useEffect(() => {
     Axios.get("http://localhost:3001/isAuthenticated", {
       headers: {
@@ -86,7 +84,8 @@ function Discover() {
 
         if (!unmounted) {
           getGroups();
-          checkUser();        }
+          checkUser();
+        }
       }, 0);
 
       return () => {
@@ -100,7 +99,12 @@ function Discover() {
       <NavBar></NavBar>
       <h4>Discover</h4>
       <Paper
-        sx={{ p: "2px 4px", display: "flex", alignItems: "center", width: 800 }}
+        sx={{
+          p: "2px 4px",
+          display: "flex",
+          alignItems: "center",
+          width: 800,
+        }}
       >
         <InputBase
           sx={{ ml: 1, flex: 1 }}
@@ -112,19 +116,20 @@ function Discover() {
         </IconButton>
       </Paper>
 
-      <Card>
-        <div id="groupSection">
-          {groupData.map((groups) => (
-            <Link to={"/group/" + groups._id} id="groupLink">
-              <Paper id="groupPaper">
-                <img id="groupImage" src={groups.image} />
-                <p id="groupName">{groups.groupName}</p>
-              </Paper>
-            </Link>
+      <Card id="groupsCard">
+        <Grid lg={12} item container spacing={2} id="testgrid">
+          {displayedRecords.map((groups) => (
+            <Grid item lg={3} md={3} xs={6}>
+              <Link to={"/group/" + groups._id} id="groupLink">
+                <Paper id="groupPaper">
+                  <img id="groupImage" src={groups.image.image} />
+                  <p id="groupName">{groups.groupName}</p>
+                </Paper>
+              </Link>
+            </Grid>
           ))}
-        </div>
+        </Grid>
       </Card>
-
       <Pagination
         count={numOfPages}
         renderItem={(item) => (
