@@ -1,0 +1,22 @@
+- mongo db 
+- when it says re order stages - does this just mean reorder by adding an index
+and discussing the changes in the stages ?
+- should the docker commands to create the clusters be in the cql/ sql files?
+
+for the mongo db aggregation pipeline, when you mention reordering stages - is this just from the indexing, which causes the stages to change in the execution plan which we discuss?
+
+Ma
+Maya O Connell
+2:02 PM
+and also, should the docker commands in creating the clusters be added to the cql/sql files?
+
+De
+Deirdre Lawless
+2:03 PM
+Yes - based on how you think the indexes would improve the stages
+
+De
+Deirdre Lawless
+2:03 PM
+No there is no need to include the docker code as long as you have output to show that they are running
+

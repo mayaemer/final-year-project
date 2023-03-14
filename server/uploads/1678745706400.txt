@@ -1,0 +1,32 @@
+SELECT * FROM pagila.customer;
+
+INSERT into pagila.customer(600, 2, 'John', 'James', 'john@email.com', 606, true, '2022-02-14', '2022-02-15 09:57:20+00', 1);
+
+
+INSERT into pagila.customer (customer_id, store_id, first_name, last_name, email, address_id, activebool, create_date, last_update, active) values(600, 2, 'John', 'James', 'john@email.com', 606, true, '2022-02-14', '2022-02-15 09:57:20+00', 1);
+
+
+
+INSERT into pagila.customer (customer_id, store_id, first_name, last_name, email, address_id, activebool, create_date, last_update, active) values(600, 2, 'John', 'James', 'john@email.com', 600, true, '2022-02-14', '2022-02-15 09:57:20+00', 1);
+
+UPDATE pagila.customer
+set first_name = 'jessica'
+where customer_id=600;
+
+delete from pagila.customer
+where customer_id=600;
+
+select * from pagila.actor;
+
+insert into pagila.actor (actor_id, first_name, last_name, last_update) values (201, 'Jane', 'John', '2022-02-15 09:34:33+00');
+
+UPDATE pagila.actor 
+set first_name = 'Kelly'
+where actor_id = 201;
+
+delete from pagila.actor where actor_id = 201;
+
+select * from pagila.language;
+
+insert into pagila.language
+(language_id, name, last_update) values (7, 'geography', '2022-02-15 10:02:19+00');

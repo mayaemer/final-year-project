@@ -19,6 +19,7 @@ import {
   updateGroupNameSchema,
   updatePassSchema,
 } from "../Validations/Validation";
+import HomeIcon from '@mui/icons-material/Home';
 
 function SelectedGroup() {
   let { selectedGroup } = useParams();
@@ -235,6 +236,10 @@ function SelectedGroup() {
       .catch((e) => console.log(e));
   };
 
+  const cancelJoin = () => {
+    setJoinForm(false);
+    setPublicView(true);
+  }
 
   useEffect(() => {
     Axios.get("http://localhost:3001/isAuthenticated", {
@@ -273,7 +278,7 @@ function SelectedGroup() {
       {membersView && (
         <div>
           <Fab aria-label="back" onClick={handleBack}>
-            <ArrowBackIosIcon />
+            <HomeIcon />
           </Fab>
           {creatorSettings && (
             <Fab aria-label="groupSettings" onClick={clickSettings}>
@@ -284,7 +289,7 @@ function SelectedGroup() {
             <Card id="groupCard">
               <Grid lg={12} item container spacing={2}>
                 <Grid item lg={3} md={3} xs={6}>
-                  <Link to={"/content"} id="contentLink">
+                  <Link to={"/Content/" + groupInfo._id} id="contentLink">
                     <Paper id="paperOption">
                       <img
                         id="paperImage"
@@ -517,7 +522,7 @@ function SelectedGroup() {
             />
             <Button variant="outlined" type="submit">Join Group</Button>
           </form>
-          <Button variant="outlined">Cancel</Button>
+          <Button variant="outlined" onClick={cancelJoin}>Cancel</Button>
         </div>
       )}
     </div>

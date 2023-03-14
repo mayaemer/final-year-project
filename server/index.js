@@ -82,17 +82,20 @@ try {
 
 // function to upload files to database
 app.post("/upload", upload.array("files"), async (req, res) => {
-  console.log(req.files);
+  //console.log(req.files);
+  //console.log(req.body.title);
 
-  try {
-    client
-      .db("eLearningDatabase")
-      .collection("fileuploads")
-      .insertMany(req.files);
-    res.json({ message: "Successfully uploaded files" });
-  } catch (e) {
-    console.log(e);
-  }
+  const currDateTime = getCurrentDateTime();
+
+  const uploadData = {
+    title: req.body.title,
+    dateOfCreation: currDateTime,
+    creator: req.body.creator,
+    group: req.body.groupId,
+    files: req.files,
+  };
+
+  insertData(res, "fileuploads", uploadData);
 });
 
 // read all entries from file uploads collection
@@ -108,6 +111,18 @@ app.get("/readfiles", (req, res) => {
         console.log(e);
       }
     });
+});
+
+app.post("/deleteContent", (req, res) => {
+  const id = ObjectId(req.body.contentid);
+  if (req.body.filename === undefined) {
+    console.log(id)
+    deleteItem(res, "fileuploads", id);
+  }
+  else {
+    const filename = req.body.filename;
+    removeFile(res, id, filename)
+  }
 });
 
 const checkEmail = function (email) {
@@ -400,16 +415,16 @@ app.post("/searchGroups", (req, res) => {
 app.post("/joinGroup", (req, res) => {
   const id = ObjectId(req.body.group);
   bcrypt.hash(req.body.password, saltRounds, (err, hash) => {
-    if((err) => console.log(err));
-    console.log(hash)
-  })
-    db.collection("groups")
+    if ((err) => console.log(err));
+    console.log(hash);
+  });
+  db.collection("groups")
     .findOne({ _id: id })
     .then((result) => {
-      console.log(result.password)
+      console.log(result.password);
       bcrypt.compare(req.body.password, result.password, (err, response) => {
         if (response === true) {
-          console.log('test')
+          console.log("test");
           addMember(req.body.user, id, res);
         } else {
           res.send({ message: "Incorrect password." });
@@ -436,7 +451,7 @@ app.post("/deleteGroup", (req, res) => {
     .then((result) => {
       bcrypt.compare(pass, result.password, (response, err) => {
         if (response) {
-          deleteItem(res, 'groups', id);
+          deleteItem(res, "groups", id);
         } else {
           res.send(err);
         }
@@ -445,21 +460,10 @@ app.post("/deleteGroup", (req, res) => {
     .catch((e) => console.error(e));
 });
 
-// function to delete group of specified id from database records
-// function deleteGroup(id, res) {
-//   db.collection("groups")
-//     .deleteOne({ _id: id })
-//     .then((result) => {
-//       res.send(result);
-//     })
-//     .catch((e) => console.error(e));
-// }
-
-app.post('/deleteQuiz', (req, res) => {
+app.post("/deleteQuiz", (req, res) => {
   const id = ObjectId(req.body.qid);
-  deleteItem(res, 'quiz', id);
-})
-
+  deleteItem(res, "quiz", id);
+});
 
 app.post("/checkProfanity", async (req, res) => {
   const body = req.body.textBody;
@@ -549,24 +553,28 @@ app.post("/createQuiz", (req, res) => {
     end: req.body.end,
     questions: req.body.questions,
     group: req.body.groupid,
-    correctAnswers : req.body.correctAns,
-    results : []
+    results: [],
   };
 
   insertData(res, "quiz", quizdata);
 });
 
-app.post('/getQuiz', (req, res) => {
-   const groupid = req.body.ID;
-   findMany(res, 'quiz', groupid);
-})
+app.post("/getQuiz", (req, res) => {
+  const groupid = req.body.ID;
+  findMany(res, "quiz", groupid);
+});
 
-app.post('/getSelectedQuiz', (req, res) => {
+app.post("/getSelectedQuiz", (req, res) => {
   const quizId = ObjectId(req.body.ID);
-  findSingle(res, 'quiz', quizId);
-})
+  findSingle(res, "quiz", quizId);
+});
 
-app.post('/sendAnswers', (req, res) => {
+app.post("/getContent", (req, res) => {
+  const groupid = req.body.ID;
+  findMany(res, "fileuploads", groupid);
+});
+
+app.post("/sendAnswers", (req, res) => {
   const qid = ObjectId(req.body.quiz);
 
   const answersData = {
@@ -575,10 +583,10 @@ app.post('/sendAnswers', (req, res) => {
     userEmail: req.body.userEmail,
     answers: req.body.answers,
     end: req.body.end,
-    grade: req.body.grade
-  }
-  updateQuiz(res, 'quiz', qid, answersData)
-})
+    grade: req.body.grade,
+  };
+  updateQuiz(res, "quiz", qid, answersData);
+});
 
 function pyProfanityCheck(res, title, body) {
   console.log(body);
@@ -593,62 +601,108 @@ function pyProfanityCheck(res, title, body) {
 }
 
 function updateOne(res, collection, email, data) {
-  db.collection(collection)
-    .updateOne({ _id: email }, { $push: { profanityMonitoring: [data] } })
-    .then((result) => {
-      res.send([1]);
-    })
-    .catch((e) => {
-      console.error(e);
-    });
+  try {
+    db.collection(collection)
+      .updateOne({ _id: email }, { $push: { profanityMonitoring: [data] } })
+      .then((result) => {
+        res.send(result);
+      })
+      .catch((e) => {
+        res.send(e);
+      });
+  } catch (e) {
+    res.send(e);
+  }
 }
 
 function updateQuiz(res, collection, qid, data) {
-  db.collection(collection)
-    .updateOne({ _id: qid }, { $push: { results: [data] } })
-    .then((result) => {
-      res.send(result);
-    })
-    .catch((e) => {
-      console.error(e);
-    });
+  try {
+    db.collection(collection)
+      .updateOne({ _id: qid }, { $push: { results: [data] } })
+      .then((result) => {
+        res.send(result);
+      })
+      .catch((e) => {
+        res.send(e);
+      });
+  } catch (e) {
+    res.send(e);
+  }
 }
 
 function updateOneComment(res, collection, id, data) {
   const oid = ObjectId(id);
-  db.collection(collection)
-    .updateOne({ _id: oid }, { $push: { comments: [data] } })
-    .then((result) => {
-      res.send(result);
-    })
-    .catch((e) => {
-      console.error(e);
-    });
+  try {
+    db.collection(collection)
+      .updateOne({ _id: oid }, { $push: { comments: [data] } })
+      .then((result) => {
+        res.send(result);
+      })
+      .catch((e) => {
+        res.send(e);
+      });
+  } catch (e) {
+    res.send(e);
+  }
 }
 
 function insertData(res, collection, data) {
-  db.collection(collection)
-    .insertOne(data)
-    .then((result) => res.send(result))
-    .catch((e) => console.error(e));
+  try {
+    db.collection(collection)
+      .insertOne(data)
+      .then((result) => res.send(result))
+      .catch((e) => res.send(e));
+  } catch (e) {
+    res.send(e);
+  }
 }
 
 function findSingle(res, collection, data) {
-  db.collection(collection)
-    .findOne({ _id: data })
-    .then((result) => {
-      res.send(result);
-    })
-    .catch((e) => console.log(e));
+  try {
+    db.collection(collection)
+      .findOne({ _id: data })
+      .then((result) => {
+        res.send(result);
+      })
+      .catch((e) => res.send(e));
+  } catch (e) {
+    res.send(e);
+  }
 }
 
 function findMany(res, collection, data) {
-  db.collection(collection)
-    .find({ group: data })
-    .toArray(function (err, result) {
-      if (err) console.log(err);
-      res.send(result);
-    });
+  try {
+    db.collection(collection)
+      .find({ group: data })
+      .toArray(function (err, result) {
+        if (err) res.send(err);
+        res.send(result);
+      });
+  } catch (e) {
+    res.send(e);
+  }
+}
+
+function deleteItem(res, collection, data) {
+  try {
+    db.collection(collection)
+      .deleteOne({ _id: data })
+      .then((result) => res.send(result))
+      .catch((e) => res.send(e));
+  } catch (e) {
+    res.send(e);
+  }
+}
+
+function removeFile(res, id, file) {
+  try {
+    db.collection("fileuploads")
+      .updateOne({ _id: id }, { $pull: { files: { filename: file } } })
+      .then((result) => res.send(result))
+      .catch((e) => res.send(e));
+  } catch (e) {
+    res.send(e);
+  }
 }
 
 function getCurrentDateTime() {
@@ -659,13 +713,6 @@ function getCurrentDateTime() {
     date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
   const currDateTime = currentDate + " " + currentTime;
   return currDateTime;
-}
-
-function deleteItem(res, collection, data) {
-  db.collection(collection)
-    .deleteOne({ _id: data })
-    .then((result) => res.send(result))
-    .catch((e) => console.error(e));
 }
 
 app.listen(PORT, () => {

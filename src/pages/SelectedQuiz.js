@@ -7,16 +7,19 @@ import BackButton from "../components/BackButton";
 import $ from "jquery";
 import Button from "@mui/material/Button";
 import FormGroup from "@mui/material/FormGroup";
-import { Checkbox, FormControlLabel } from "@mui/material";
+import { Box, Checkbox, FormControlLabel, IconButton, Input } from "@mui/material";
 import Spinner from "react-bootstrap/Spinner";
 import Alert from "@mui/material/Alert";
 import Grid from "@mui/material/Grid";
 import Card from "@mui/material/Card";
+import TextField from "@mui/material/TextField";
+import RemoveIcon from "@mui/icons-material/Remove";
 
 function SelectedQuiz() {
   const { groupId, quizId } = useParams("/:groupId/:quizId");
 
   const navigate = useNavigate();
+
 
   const [quizData, setQuizData] = useState([]);
   const [questionData, setQuestionData] = useState([]);
@@ -27,9 +30,19 @@ function SelectedQuiz() {
   });
 
   const [participantList, setParticipantList] = useState([]);
+  const [selectedUserData, setSelectedUserData] = useState({
+    email: "",
+    fname: "",
+    sname: "",
+    grade: "",
+    end: "",
+    answers: [],
+  });
 
   const [view, setView] = useState({
-    teacher: false,
+    teacherMain: false,
+    teacherQuizInfo: false,
+    teacherReview: false,
     student: false,
   });
 
@@ -49,6 +62,112 @@ function SelectedQuiz() {
     complete: false,
   });
 
+  const [quizType, setQuizType] = useState({
+    mcq: false,
+    text: false,
+  });
+
+  const [textAnswer, setTextAnswer] = useState({
+    answer: "",
+    qid: "",
+  });
+
+  const [allAnswers, setAllAnswers] = useState([]);
+
+  const [textQuiz, setTextQuiz] = useState({
+    marks: 0,
+    qid: 0,
+    current: 0,
+  });
+
+  const handleMarks = (e) => {
+    setTextQuiz({
+      marks: parseInt(e.target.value),
+      qid: e.target.value,
+    });
+  };
+
+  const saveMark = (e) => {};
+
+  const showUsersQuiz = (e) => {
+    setView({
+      ...view,
+      teacherQuizInfo: false,
+      teacherReview: true,
+    });
+    const selectedUser = e.target.id;
+    quizData.results.forEach((result) => {
+      //console.log(result[0])
+      if (result[0]["userEmail"] === selectedUser) {
+        if (quizType.mcq === true) {
+          formatMcqAns(result);
+        } else if (quizType.text === true) {
+          formatTextQuizAns(result);
+        }
+      }
+    });
+  };
+
+  const formatMcqAns = (data) => {
+    let ansObjArr = [];
+    for (let i = 0; i < quizData.questions.length; i++) {
+      const ansObj = {
+        questions: quizData.questions[i],
+        //   answers : data[0]["answers"][i]
+      };
+      ansObjArr.push(ansObj);
+    }
+
+    for (let i = 0; i < ansObjArr.length; i++) {
+      ansObjArr[i].questions.answers = data[0]["answers"][i];
+    }
+
+    setSelectedUserData({
+      userEmail: data[0]["userEmail"],
+      userFname: data[0]["userFname"],
+      userSname: data[0]["userSname"],
+      end: data[0]["end"],
+      grade: data[0]["grade"],
+      answers: ansObjArr,
+    });
+  };
+
+  const formatTextQuizAns = (data) => {
+    //console.log(data);
+    const questionAnsArr = [];
+    for (let i = 0; i < quizData.questions.length; i++) {
+      if (quizData.questions[i]["id"] == data[0]["answers"][i]["qid"]) {
+        const questionAns = {
+          id: quizData.questions[i]["id"],
+          question: quizData.questions[i]["question"],
+          answer: data[0]["answers"][i]["answer"],
+        };
+        questionAnsArr.push(questionAns);
+      }
+    }
+    setSelectedUserData({
+      ...selectedUserData,
+      userEmail: data[0]["userEmail"],
+      userFname: data[0]["userFname"],
+      userSname: data[0]["userSname"],
+      end: data[0]["end"],
+      grade: data[0]["grade"],
+      answers: questionAnsArr,
+    });
+  };
+
+  const closeReview = () => {
+    setView({
+      ...view,
+      teacherQuizInfo: true,
+      teacherReview: false,
+    });
+  };
+
+  const handleTest = () => {
+    console.log(selectedUserData);
+  };
+
   const getSelectedQuiz = () => {
     const data = {
       ID: quizId,
@@ -58,8 +177,24 @@ function SelectedQuiz() {
       checkDateTime(res.data.start, res.data.end);
       setQuestionData(res.data.questions);
       getQuizParticipants(res.data.results);
+      checkQuizType(res.data.type);
       console.log(res);
     });
+  };
+
+  const checkQuizType = (type) => {
+    //console.log(type);
+    if (type === "MCQ") {
+      setQuizType({
+        ...quizType,
+        mcq: true,
+      });
+    } else if (type === "Text") {
+      setQuizType({
+        ...quizType,
+        text: true,
+      });
+    }
   };
 
   const getQuizParticipants = (results) => {
@@ -139,37 +274,53 @@ function SelectedQuiz() {
     const qid = e.target.id;
     const answer = e.target.value;
 
-    //console.log(answer);
-
-    const setSelectedAnswer = selected.find((ans) => ans.id === qid);
-    //console.log(setSelectedAnswer)
-    if (setSelectedAnswer === undefined) {
-      setSelected([
-        ...selected,
-        {
-          id: qid,
-          answer: [answer],
-        },
-      ]);
-    } else if (setSelectedAnswer != undefined) {
-      if (setSelectedAnswer.answer.includes(answer) === true) {
-        for (let i = 0; i < setSelectedAnswer.answer.length; i++) {
-          if (setSelectedAnswer.answer[i] === answer) {
-            setSelectedAnswer.answer[i] = "undefined";
-          }
+    for (let i = 0; i < quizData.questions.length; i++) {
+      if (quizData.questions[i]["id"] == qid) {
+        const setSelected = quizData.questions[i]["answers"].find(
+          (ans) => ans.id === answer
+        );
+        if (setSelected.selected === true) {
+          setSelected.selected = false;
+          //console.log(setSelected);
+        } else if (setSelected.selected === false) {
+          setSelected.selected = true;
+          //console.log(setSelected);
+        } else if (setSelected.selected === undefined) {
+          setSelected.selected = true;
+          //console.log(setSelected);
         }
-      } else if (setSelectedAnswer.answer != answer) {
-        // add new item to existing array
-        setSelectedAnswer.answer = [...setSelectedAnswer.answer, answer];
       }
     }
+
+    // const setSelectedAnswer = selected.find((ans) => ans.id === qid);
+
+    // if (setSelectedAnswer === undefined) {
+    //   setSelected([
+    //     ...selected,
+    //     {
+    //       id: qid,
+    //       answer: [answer],
+    //     },
+    //   ]);
+    // } else if (setSelectedAnswer != undefined) {
+    //   if (setSelectedAnswer.answer.includes(answer) === true) {
+    //     for (let i = 0; i < setSelectedAnswer.answer.length; i++) {
+    //       if (setSelectedAnswer.answer[i] === answer) {
+    //         setSelectedAnswer.answer[i] = "undefined";
+    //       }
+    //     }
+    //   } else if (setSelectedAnswer.answer != answer) {
+    //     // add new item to existing array
+    //     setSelectedAnswer.answer = [...setSelectedAnswer.answer, answer];
+    //   }
+    // }
   };
 
   const filterUndefined = () => {
     let selectedAnsArr = [];
-    console.log(selected);
+    //console.log(selected);
     selected.map((sa) => {
-      console.log(sa);
+      //console.log(sa);
       let selectedAnswerItem = sa;
       const filteredAns = selectedAnswerItem.answer.filter(
         (item) => item != "undefined"
@@ -185,34 +336,98 @@ function SelectedQuiz() {
     return selectedAnsArr;
   };
 
-  const gradeMCQ = (selectedAnswers) => {
-    const correctAns = quizData.correctAnswers;
+  const gradeMCQ = () => {
     const numQuestions = quizData.questions.length;
     let totalMarks = 0;
 
-    correctAns.forEach((correct) => {
-      selectedAnswers.forEach((ans) => {
-        console.log(ans, 'ans')
-        if (correct.qid === ans.qid) {
-          ans.answer.forEach((opt) => {
-            if (correct.aid.includes(opt)) {
-              const markPerAnswer = 1 / correct.aid.length;
-              totalMarks += markPerAnswer;
-            }
-          });
+    quizData.questions.forEach((q) => {
+      let numOfCorrect = 0;
+      for (let i = 0; i < q.answers.length; i++) {
+        if (q.answers[i]["correct"] === true) {
+          numOfCorrect += 1;
         }
-      });
+      }
+      for (let i = 0; i < q.answers.length; i++) {
+        if (
+          q.answers[i]["correct"] === true &&
+          q.answers[i]["selected"] === true
+        ) {
+          const markPerAnswer = 1 / numOfCorrect;
+          totalMarks += markPerAnswer;
+        }
+      }
     });
 
+    //console.log(totalMarks)
     const total = 100 * (totalMarks / numQuestions);
     //console.log(total)
     return total;
   };
 
-  const endQuiz = () => {
-    const selectedAnswers = filterUndefined();
-    const grade = gradeMCQ(selectedAnswers);
+  const saveAnswer = () => {
+    const setAnswer = allAnswers.find((ans) => ans.qid === textAnswer.qid);
+    if (textAnswer.qid) {
+      if (setAnswer === undefined) {
+        setAllAnswers([
+          ...allAnswers,
+          {
+            qid: textAnswer.qid,
+            answer: textAnswer.answer,
+          },
+        ]);
+      } else if (setAnswer != undefined) {
+        setAnswer.answer = textAnswer.answer;
+      }
+    }
+    //setAllAnswers([...allAnswers, completeAnswer]);
+  };
 
+  const handleTextChange = (e) => {
+    const answer = e.target.value;
+    const qid = e.target.id;
+    setTextAnswer({
+      answer: answer,
+      qid: qid,
+    });
+    //console.log(allAnswers);
+  };
+
+  const endQuiz = () => {
+    if (quizData.type === "MCQ") {
+      const grade = gradeMCQ();
+      let answers = [];
+      questionData.forEach((q) => {
+        answers.push(q.answers);
+      });
+      //console.log(answers)
+      formatToSend(answers, grade);
+    } else if (quizData.type === "Text") {
+      const completeAnswer = {
+        qid: textAnswer.qid,
+        answer: textAnswer.answer,
+      };
+      if (textAnswer.qid != "") {
+        const answerArr = allAnswers;
+        const alreadyAnswered = [];
+        answerArr.forEach((ans) => {
+          alreadyAnswered.push(ans.qid);
+        });
+        if (alreadyAnswered.includes(textAnswer.qid) === true) {
+          for (let i = 0; i < answerArr.length; i++) {
+            if (answerArr[i] === textAnswer.qid) {
+              answerArr = completeAnswer;
+            }
+          }
+        } else if (alreadyAnswered.includes(textAnswer.qid) === false) {
+          answerArr.push(completeAnswer);
+        }
+
+        formatToSend(answerArr);
+      }
+    }
+  };
+
+  const formatToSend = (answers, grade) => {
     setQuizAvailable({
       ...quizAvailable,
       start: false,
@@ -225,7 +440,7 @@ function SelectedQuiz() {
       userFname: userInfo.fname,
       userSname: userInfo.sname,
       userEmail: userInfo.email,
-      answers: selectedAnswers,
+      answers: answers,
       end: endTime,
       grade: grade,
     };
@@ -290,7 +505,8 @@ function SelectedQuiz() {
     if (usertype === "Teacher" && email === creator) {
       setView({
         ...view,
-        teacher: true,
+        teacherMain: true,
+        teacherQuizInfo: true,
       });
     } else {
       setView({
@@ -329,10 +545,6 @@ function SelectedQuiz() {
     }, []);
   }, []);
 
-  const handleTest = () => {
-    gradeMCQ();
-  };
-
   return (
     <div>
       <div id="groupTitle">
@@ -341,28 +553,108 @@ function SelectedQuiz() {
       <BackButton destination={"quiz/" + groupId}></BackButton>
       <h3>{quizData.title}</h3>
 
-      {view.teacher && (
+      <button onClick={handleTest}>test</button>
+
+      {view.teacherMain && (
         <Grid>
           <Card>
-            <button onClick={handleTest}>test</button>
-            <p>Quiz starts: {quizData.start}</p>
-            <p>Quiz ends: {quizData.end}</p>
-            <p>Quiz type: {quizData.type}</p>
-            <p>Completed by:</p>
-            {completedBy.noParticipants && (
-              <p>No users have completed this quiz.</p>
-            )}
-            {completedBy.participantsList && (
+            {view.teacherQuizInfo && (
               <Grid>
-                <ul>
-                  {participantList.map((item) => (
-                    <Grid>
-                      <p>
-                        {item.fname} {item.sname}
-                      </p>
-                    </Grid>
-                  ))}
-                </ul>
+                <p>Quiz starts: {quizData.start}</p>
+                <p>Quiz ends: {quizData.end}</p>
+                <p>Quiz type: {quizData.type}</p>
+                <p>Completed by:</p>
+                {completedBy.noParticipants && (
+                  <p>No users have completed this quiz.</p>
+                )}
+                {completedBy.participantsList && (
+                  <Grid>
+                    <ul>
+                      {participantList.map((item) => (
+                        <Grid>
+                          <Grid>
+                            <p id={item.email}>
+                              {item.fname} {item.sname}
+                            </p>
+                          </Grid>
+                          <Grid>
+                            <Button id={item.email} onClick={showUsersQuiz}>
+                              Review results
+                            </Button>
+                          </Grid>
+                        </Grid>
+                      ))}
+                    </ul>
+                  </Grid>
+                )}
+              </Grid>
+            )}
+
+            {view.teacherReview && (
+              <Grid>
+                <IconButton
+                  aria-label="closeReview"
+                  onClick={closeReview}
+                  id="reviewBtn"
+                >
+                  <RemoveIcon />
+                </IconButton>
+
+                <p>
+                  Quiz attempt of: {selectedUserData.userFname}{" "}
+                  {selectedUserData.userSname}
+                </p>
+                <p>Quiz finished at: {selectedUserData.end}</p>
+                <p>Grade: {selectedUserData.grade}</p>
+                {quizType.text && (
+                  <Grid>
+                    {selectedUserData.answers.map((ans) => (
+                      <Grid>
+                        <p>Q.{ans.id}</p>
+                        <p>{ans.question}</p>
+
+                        <p>{ans.answer}</p>
+                          <TextField
+                            id={ans.id}
+                            variant="outlined"
+                            sx={{ width: 50 }}
+                            size="small"
+                            onClick={saveMark}
+                            onChange={handleMarks}
+                          />
+                        <p>/1</p>
+                      </Grid>
+                    ))}
+                  </Grid>
+                )}
+
+                {quizType.mcq && (
+                  <Grid>
+                    {selectedUserData.answers.map((item) => (
+                      <Grid>
+                        <p>
+                          Q.{item.questions.id} {item.questions.question}
+                        </p>
+                        {item.questions.answers.map((ans) => (
+                          <Grid
+                            style={{
+                              backgroundColor: ans.correct
+                                ? "#d9fae0"
+                                : "white",
+                            }}
+                          >
+                            <Checkbox
+                              disabled
+                              defaultChecked={ans.selected}
+                            ></Checkbox>
+                            <p>{ans.answer}</p>
+                          </Grid>
+                        ))}
+                      </Grid>
+                    ))}
+                  </Grid>
+                )}
+                <Button variant="outlined">Save</Button>
               </Grid>
             )}
           </Card>
@@ -398,17 +690,32 @@ function SelectedQuiz() {
               {Object.keys(questionData).map((q, i) => (
                 <div id="questionSection">
                   <p>Question {questionData[q].id}</p>
-                  <p>Question {questionData[q].question}</p>
-                  <FormGroup>
-                    {Object.keys(questionData[q].answers).map((a, j) => (
-                      <FormControlLabel
-                        value={questionData[q].answers[a].id}
-                        control={<Checkbox id={questionData[q].id} />}
-                        label={questionData[q].answers[a].answer}
-                        onClick={selectOption}
-                      ></FormControlLabel>
-                    ))}
-                  </FormGroup>
+                  <p>{questionData[q].question}</p>
+                  {quizType.mcq && (
+                    <FormGroup>
+                      {Object.keys(questionData[q].answers).map((a, j) => (
+                        <FormControlLabel
+                          value={questionData[q].answers[a].id}
+                          control={<Checkbox id={questionData[q].id} />}
+                          label={questionData[q].answers[a].answer}
+                          onClick={selectOption}
+                        ></FormControlLabel>
+                      ))}
+                    </FormGroup>
+                  )}
+                  {quizType.text && (
+                    <Grid>
+                      <TextField
+                        fullWidth
+                        id={questionData[q].id}
+                        placeholder="Type here.."
+                        multiline
+                        rows={4}
+                        onClick={saveAnswer}
+                        onChange={handleTextChange}
+                      />
+                    </Grid>
+                  )}
                 </div>
               ))}
 

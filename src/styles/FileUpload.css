@@ -13,3 +13,18 @@
 #button {
     margin-right : 0.5em;
 }
+
+#listItem {
+    border-bottom: 1px solid lightgray;
+    margin: auto;
+}
+
+#menu {
+    background-color: #edeff2;
+    height: 100%;
+}
+
+#contentBody {
+    position: relative;
+    top: -80px;
+}

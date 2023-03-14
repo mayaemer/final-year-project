@@ -30,7 +30,7 @@ function Login() {
     }).then((response) => {
       const authenticated = response.data;
       if (authenticated === true) {
-        navigate("/home");
+        navigate("/Groups");
       }
     }, []);
   });

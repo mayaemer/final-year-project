@@ -12,6 +12,7 @@ import Discover from './pages/Discover';
 import Questions from './pages/Questions';
 import Quiz from './pages/Quiz';
 import SelectedQuiz from './pages/SelectedQuiz';
+import Content from './pages/Content';
 
 
 
@@ -24,9 +25,8 @@ function App() {
           <Route path='/' element={<Login />} />
           <Route path='/register' element={<Register />} />
           <Route path='/group/:selectedGroup' element={<SelectedGroup />}></Route>
-          <Route path='/home' element={<Home />} />
           <Route path='/Groups' element={<Groups />} />
-          <Route path='/Content' element={<FileUpload />} />
+          <Route path='/Content/:groupId' element={<Content />} />
           <Route path="/file/:selectedFile" element={<ViewFile />} />
           <Route path="/Discover" element={<Discover />} />
           <Route path="/Questions/:groupId" element={<Questions />} />

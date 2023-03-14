@@ -20,7 +20,6 @@ import Grid from "@mui/material/Grid";
 import Table from "react-bootstrap/Table";
 import { Link } from "react-router-dom";
 import Checkbox from "@mui/material/Checkbox";
-import { GripVertical } from "react-bootstrap-icons";
 
 function Quiz() {
   Axios.defaults.withCredentials = true;
@@ -63,7 +62,8 @@ function Quiz() {
     tf: false,
     savedQuestions: true,
     loading: false,
-    editQuestion: false,
+    mcqEdit: false,
+    mcqCreate: false,
   });
 
   const [currentQuestion, setCurrentQuestion] = useState(1);
@@ -72,15 +72,15 @@ function Quiz() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [questionsArray, setQuestionsArray] = useState([1]);
-  const [mcq, setMcq] = useState([]);
+  const [quizToCreate, setQuizToCreate] = useState([]);
   const [question, setQuestion] = useState("");
   const [answers, setAnswers] = useState([
-    { id: "a" },
-    { id: "b" },
-    { id: "c" },
-    { id: "d" },
+    { id: "a", correct: false },
+    { id: "b", correct: false },
+    { id: "c", correct: false },
+    { id: "d", correct: false },
   ]);
-  const [correctAnswers, setCorrectAnswers] = useState([]);
+  // const [correctAnswers, setCorrectAnswers] = useState([]);
   const [editQuestion, setEditQuestion] = useState();
   const [answerInput, setAnswerInput] = useState(["a", "b", "c", "d"]);
   const [deleteQuiz, setDeleteQuiz] = useState();
@@ -139,7 +139,7 @@ function Quiz() {
           quiz.userCompletion = "Complete";
           quizDataCompletionArr.push(quiz);
         } else {
-          console.log(quiz);
+          //console.log(quiz);
           quiz.userCompletion = "Incomplete";
           quizDataCompletionArr.push(quiz);
         }
@@ -167,6 +167,9 @@ function Quiz() {
   };
 
   const closeForm = () => {
+    setQuizDisplay({
+      main: true,
+    });
     setCreateForm({
       ...createForm,
       main: false,
@@ -174,13 +177,13 @@ function Quiz() {
       mcq: false,
       text: false,
       tf: false,
+      mcqEdit: false,
     });
     setButtonVisibility({
       ...buttonVisibility,
       add: true,
       remove: false,
     });
-    setQuizDisplay(true);
   };
 
   const checkUser = (members, creator) => {
@@ -232,6 +235,7 @@ function Quiz() {
         ...createForm,
         first: false,
         mcq: true,
+        mcqCreate: true,
       });
     } else if (quizType === "Text") {
       setCreateForm({
@@ -249,11 +253,13 @@ function Quiz() {
     });
   };
 
+  // set the current question
   const addQuestion = () => {
     setAnswerInput(["a", "b", "c", "d"]);
     setCreateForm({
       ...createForm,
       edit: false,
+      mcqCreate: true,
     });
     setEditQuestion();
     const num = questionsArray.length;
@@ -262,7 +268,7 @@ function Quiz() {
 
     const hideId = "#" + currentQuestion;
     $(hideId).hide();
-    console.log(hideId);
+    //console.log(hideId);
     setCurrentQuestion(parseInt(num) + 1);
   };
 
@@ -273,6 +279,11 @@ function Quiz() {
       const answerOption = e.target.name;
       const answerToSet = answers.find((a) => a.id === answerOption);
       answerToSet.answer = e.target.value;
+      answerToSet.selected = false;
+    } else if (e.target.id === "correctCheck") {
+      const answerOption = e.target.name;
+      const answerToSet = answers.find((a) => a.id === answerOption);
+      answerToSet.correct = true;
     }
   };
 
@@ -280,25 +291,59 @@ function Quiz() {
     saveQuestion(currentQuestion);
     const id = parseInt(e.currentTarget.id);
     setCurrentQuestion(id);
-    setCreateForm({
-      ...createForm,
-      mcq: false,
-      edit: true,
-    });
-
-    const setQuestion = mcq.find((q) => q.id === id);
+    if (quizType === "MCQ") {
+      setCreateForm({
+        ...createForm,
+        mcq: true,
+        mcqEdit: true,
+        edit: true,
+        text: false,
+        mcqCreate: false,
+      });
+    } else if (quizType === "Text") {
+      setCreateForm({
+        ...createForm,
+        mcq: false,
+        edit: true,
+        text: false,
+      });
+    }
+    const setQuestion = quizToCreate.find((q) => q.id === id);
+    // console.log(setQuestion.question);
     setEditQuestion(setQuestion);
   };
 
+  const editChange = (e) => {
+    if (e.target.id === "question") {
+      editQuestion.question = e.target.value;
+    } else if (e.target.id === "answer") {
+      const answerOption = e.target.name;
+      const answerToSet = editQuestion.answers.find(
+        (a) => a.id === answerOption
+      );
+      answerToSet.answer = e.target.value;
+    } else if (e.target.id === "correctCheck") {
+      const answerOption = e.target.name;
+      const answerToSet = editQuestion.answers.find(
+        (a) => a.id === answerOption
+      );
+      if(answerToSet.correct === true){
+        answerToSet.correct = false;
+      }else if (answerToSet.correct === false){
+        answerToSet.correct = true;
+      }
+    }
+  };
+
   const saveQuestion = (id) => {
-    const setMcqQuestion = mcq.find((q) => q.id === id);
+    const setMcqQuestion = quizToCreate.find((q) => q.id === id);
     if (setMcqQuestion != undefined) {
       setMcqQuestion.question = question;
       setMcqQuestion.answers = answers;
       resetQAstates();
     } else {
-      setMcq([
-        ...mcq,
+      setQuizToCreate([
+        ...quizToCreate,
         {
           id: id,
           question: question,
@@ -309,56 +354,83 @@ function Quiz() {
     }
   };
 
+  const saveEdit = () => {
+    const setQuestion = quizToCreate.find((q) => q.id === editQuestion.id);
+    setQuestion.question = editQuestion.question;
+    setQuestion.answers = editQuestion.answers;
+
+    if (quizType === "MCQ") {
+      setCreateForm({
+        ...createForm,
+        mcq: true,
+        edit: false,
+        editMcq: false,
+      });
+    }
+    setCreateForm({
+      ...createForm,
+      edit: false,
+      editMcq: false,
+    });
+    const num = questionsArray.length;
+    setCurrentQuestion(num);
+  };
+
   const resetQAstates = () => {
     setQuestion("");
-    setAnswers([{ id: "a" }, { id: "b" }, { id: "c" }, { id: "d" }]);
+    setAnswers([
+      { id: "a", correct: false },
+      { id: "b", correct: false },
+      { id: "c", correct: false },
+      { id: "d", correct: false },
+    ]);
   };
 
-  const mcqAnswers = (e) => {
-    const qid = e.target.name;
-    const aid = e.target.id;
-    const setQuestion = correctAnswers.find((q) => q.qid === qid);
-    //console.log(aid);
-    if (setQuestion === undefined) {
-      setCorrectAnswers([
-        ...correctAnswers,
-        {
-          qid: qid,
-          aid: [aid],
-        },
-      ]);
-    } else if (setQuestion != undefined) {
-      if (setQuestion.aid.includes(aid) === true) {
-        for (let i = 0; i < setQuestion.aid.length; i++) {
-          if (setQuestion.aid[i] === aid) {
-            setQuestion.aid[i] = "undefined";
-          }
-        }
-      } else if (setQuestion.aid != aid) {
-        // add new item to existing array
-        setQuestion.aid = [...setQuestion.aid, aid];
-      }
-    }
-  };
+  // const mcqAnswers = (e) => {
+  //   const qid = e.target.name;
+  //   const aid = e.target.id;
+  //   const setQuestion = correctAnswers.find((q) => q.qid === qid);
+  //   //console.log(aid);
+  //   if (setQuestion === undefined) {
+  //     setCorrectAnswers([
+  //       ...correctAnswers,
+  //       {
+  //         qid: qid,
+  //         aid: [aid],
+  //       },
+  //     ]);
+  //   } else if (setQuestion != undefined) {
+  //     if (setQuestion.aid.includes(aid) === true) {
+  //       for (let i = 0; i < setQuestion.aid.length; i++) {
+  //         if (setQuestion.aid[i] === aid) {
+  //           setQuestion.aid[i] = "undefined";
+  //         }
+  //       }
+  //     } else if (setQuestion.aid != aid) {
+  //       // add new item to existing array
+  //       setQuestion.aid = [...setQuestion.aid, aid];
+  //     }
+  //   }
+  // };
 
-  const filterUndefined = () => {
-    let correctItemArray = [];
+  // const filterUndefined = () => {
+  //   let correctItemArray = [];
 
-    correctAnswers.map((qa) => {
-      let correctAnswerItem = qa;
-      const filteredAid = correctAnswerItem.aid.filter(
-        (item) => item != "undefined"
-      );
-      let answerObject = {
-        qid: qa.qid,
-        aid: filteredAid,
-      };
+  //   correctAnswers.map((qa) => {
+  //     let correctAnswerItem = qa;
+  //     const filteredAid = correctAnswerItem.aid.filter(
+  //       (item) => item != "undefined"
+  //     );
+  //     let answerObject = {
+  //       qid: qa.qid,
+  //       aid: filteredAid,
+  //     };
 
-      correctItemArray.push(answerObject);
-    });
+  //     correctItemArray.push(answerObject);
+  //   });
 
-    return correctItemArray;
-  };
+  //   return correctItemArray;
+  // };
 
   const removeAnswer = (e) => {
     // when not returning id currentTarget
@@ -369,16 +441,16 @@ function Quiz() {
     setAnswerInput(removedElement);
   };
 
-  const saveMcq = () => {
-    const correctAnswers = filterUndefined();
+  const saveQuiz = () => {
+    // const correctAnswers = filterUndefined();
     const quizdata = {
       title: quizTitle,
       type: quizType,
       start: startDate,
       end: endDate,
-      questions: mcq,
+      questions: quizToCreate,
       groupid: groupInfo._id,
-      correctAns: correctAnswers,
+      // correctAns: correctAnswers,
     };
 
     postQuiz(quizdata);
@@ -475,7 +547,7 @@ function Quiz() {
   }, []);
 
   const testt = () => {
-    console.log(quizArray);
+    console.log(quizToCreate);
   };
 
   return (
@@ -551,11 +623,13 @@ function Quiz() {
                               <p>{quiz.userCompletion}</p>
                             </td>
                           )}
-                          {view.teacher && <td>
-                            <IconButton id={quiz._id}>
-                              <Delete id={quiz._id} onClick={confirmDelete} />
-                            </IconButton>
-                          </td>}
+                          {view.teacher && (
+                            <td>
+                              <IconButton id={quiz._id}>
+                                <Delete id={quiz._id} onClick={confirmDelete} />
+                              </IconButton>
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>
@@ -662,30 +736,40 @@ function Quiz() {
                       id="question"
                       defaultValue={editQuestion.question}
                       variant="outlined"
-                      onChange={handleQuestionChange}
+                      onChange={editChange}
                     />
                   </Grid>
-                  {editQuestion.answers.map((ans) => (
-                    <Grid lg={12} md={12} xs={12}>
-                      <Checkbox
-                        id={ans.id}
-                        name={question}
-                        onClick={mcqAnswers}
-                      ></Checkbox>
-                      <TextField
-                        sx={{
-                          width: { sm: 300, md: 600 },
-                        }}
-                        id="answer"
-                        defaultValue={ans.answer}
-                        variant="outlined"
-                        name={ans.id}
-                        onChange={handleQuestionChange}
-                      />
+
+                  {createForm.mcqEdit && (
+                    <Grid>
+                      {editQuestion.answers.map((ans) => (
+                        <Grid lg={12} md={12} xs={12}>
+                          <Checkbox
+                            id="correctCheck"
+                            name={ans.id}
+                            defaultChecked={ans.correct}
+                            onClick={editChange}
+                          ></Checkbox>
+                          <TextField
+                            sx={{
+                              width: { sm: 300, md: 600 },
+                            }}
+                            id="answer"
+                            defaultValue={ans.answer}
+                            variant="outlined"
+                            name={ans.id}
+                            onChange={editChange}
+                          />
+                        </Grid>
+                      ))}
                     </Grid>
-                  ))}
+                  )}
                 </form>
-                <Button variant="outlined" onClick={saveMcq}>
+                <Button
+                  variant="outlined"
+                  id={editQuestion.id}
+                  onClick={(e) => saveEdit(e.target.id)}
+                >
                   Save
                 </Button>
               </Grid>
@@ -693,7 +777,7 @@ function Quiz() {
 
             {createForm.savedQuestions && (
               <Grid lg={12} md={12} xs={12}>
-                {mcq.map((q) => (
+                {quizToCreate.map((q) => (
                   <Grid
                     id={q.id}
                     className="savedQuestion"
@@ -701,13 +785,17 @@ function Quiz() {
                   >
                     <p>Question {q.id}</p>
                     <p>{q.question}</p>
-                    {q.answers.map((ans) => (
-                      <div>
-                        <p>
-                          {ans.id}. {ans.answer}
-                        </p>
-                      </div>
-                    ))}
+                    {createForm.mcq && (
+                      <Grid>
+                        {q.answers.map((ans) => (
+                          <div>
+                            <p>
+                              {ans.id}. {ans.answer}
+                            </p>
+                          </div>
+                        ))}
+                      </Grid>
+                    )}
                   </Grid>
                 ))}
               </Grid>
@@ -744,7 +832,7 @@ function Quiz() {
               </Grid>
             )}
 
-            {createForm.mcq && (
+            {createForm.mcqCreate && (
               <Grid lg={12} md={12} xs={12} className="questionForm">
                 {questionsArray.map((question) => (
                   <form id={question} className="questionForm">
@@ -773,9 +861,9 @@ function Quiz() {
                     {answerInput.includes("a") && (
                       <Grid lg={12} md={12} xs={12}>
                         <Checkbox
-                          id="a"
-                          name={question}
-                          onChange={mcqAnswers}
+                          id="correctCheck"
+                          name="a"
+                          onChange={handleQuestionChange}
                         ></Checkbox>
                         <TextField
                           sx={{
@@ -795,9 +883,9 @@ function Quiz() {
                     {answerInput.includes("b") && (
                       <Grid lg={12} md={12} xs={12}>
                         <Checkbox
-                          id="b"
-                          name={question}
-                          onChange={mcqAnswers}
+                          id="correctCheck"
+                          name="b"
+                          onChange={handleQuestionChange}
                         ></Checkbox>
                         <TextField
                           sx={{
@@ -817,9 +905,9 @@ function Quiz() {
                     {answerInput.includes("c") && (
                       <Grid lg={12} md={12} xs={12}>
                         <Checkbox
-                          id="c"
-                          name={question}
-                          onChange={mcqAnswers}
+                          id="correctCheck"
+                          name="c"
+                          onChange={handleQuestionChange}
                         ></Checkbox>
                         <TextField
                           sx={{
@@ -839,9 +927,9 @@ function Quiz() {
                     {answerInput.includes("d") && (
                       <Grid lg={12} md={12} xs={12}>
                         <Checkbox
-                          id="d"
-                          name={question}
-                          onChange={mcqAnswers}
+                          id="correctCheck"
+                          name="d"
+                          onChange={handleQuestionChange}
                         ></Checkbox>
                         <TextField
                           sx={{
@@ -865,7 +953,7 @@ function Quiz() {
             <Button variant="outlined" onClick={addQuestion}>
               Add Question
             </Button>
-            <Button variant="outlined" onClick={saveMcq}>
+            <Button variant="outlined" onClick={saveQuiz}>
               Save
             </Button>
           </Grid>

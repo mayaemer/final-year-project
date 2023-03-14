@@ -1,42 +1,65 @@
 #groupCard {
-    display: block;
-    width: 85%;
-    margin: 50px;
-    padding: 20px;
-    margin: auto;
-    margin-top: 20px;
+  display: block;
+  width: 85%;
+  margin: 50px;
+  padding: 20px;
+  margin: auto;
+  margin-top: 15px;
+  margin-bottom: 2px;
 }
 
 #paperOption {
-    width: 90%;
+  width: 90%;
 }
 
 #paperImage {
-    width: 100%;
-    height: 50%;
-    border-radius: 3px 3px 0 0;
+  width: 100%;
+  height: 50%;
+  border-radius: 3px 3px 0 0;
 }
 
 #groupTitle {
-    width: 85%;
-    display: grid;
-    font-size: 100%;
-    margin: auto;
-    color: white;
-    padding: 100px;
+  width: 85%;
+  display: grid;
+  font-size: 100%;
+  margin: auto;
+  color: white;
+  padding: 100px;
+  font-weight: strong;
 }
 
 #settingsMenu {
-    margin-left: 6%;
+  margin-left: 6%;
 }
 
 #groupSettings {
-    width: 85%;
-    margin: 50px;
-    padding: 20px;
-
-} 
+  width: 85%;
+  margin: 50px;
+  padding: 20px;
+}
 
 #editBtn {
-    margin: 10px;
+  margin: 10px;
 }
+
+#header {
+  border-bottom: 1px solid lightgrey;
+  padding: 2%;
+}
+
+#formBtn {
+  margin: auto;
+}
+
+#btnSection {
+  position: relative;
+  top: -70px;
+}
+
+#contentSection {
+    position: relative;
+    top: -50px;
+}
+
+
+
