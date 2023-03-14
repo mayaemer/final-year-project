@@ -23,6 +23,7 @@ import Grid from "@mui/material/Grid";
 import Card from "@mui/material/Card";
 import TextField from "@mui/material/TextField";
 import RemoveIcon from "@mui/icons-material/Remove";
+import e from "cors";
 
 function SelectedQuiz() {
   const { groupId, quizId } = useParams("/:groupId/:quizId");
@@ -31,7 +32,7 @@ function SelectedQuiz() {
 
   const [quizData, setQuizData] = useState([]);
   const [questionData, setQuestionData] = useState([]);
-  const [currentUser, setCurrentUser] = useState("");
+  const [selected, setSelected] = useState([]);
   const [completedBy, setCompletedBy] = useState({
     participantsList: true,
     noParticipants: false,
@@ -68,6 +69,7 @@ function SelectedQuiz() {
     notAvailableEnd: false,
     loading: false,
     complete: false,
+    userCompleted: false
   });
 
   const [quizType, setQuizType] = useState({
@@ -108,6 +110,8 @@ function SelectedQuiz() {
   };
 
   const saveMark = (e) => {};
+
+  
 
   const showUsersQuiz = (e) => {
     setView({
@@ -188,11 +192,7 @@ function SelectedQuiz() {
     });
   };
 
-  const handleTest = () => {
-    console.log(selectedUserData);
-  };
-
-  const getSelectedQuiz = () => {
+  const getSelectedQuiz = (accountEmail) => {
     const data = {
       ID: quizId,
     };
@@ -200,10 +200,11 @@ function SelectedQuiz() {
       setQuizData(res.data);
       checkDateTime(res.data.start, res.data.end);
       setQuestionData(res.data.questions);
-      getQuizParticipants(res.data.results);
+      getQuizParticipants(res.data.results, accountEmail);
       checkQuizType(res.data.type);
       console.log(res);
-    });
+    })
+    .catch((e) =>  console.log(e));
   };
 
   const checkQuizType = (type) => {
@@ -221,7 +222,7 @@ function SelectedQuiz() {
     }
   };
 
-  const getQuizParticipants = (results) => {
+  const getQuizParticipants = (results, email) => {
     const participantsArr = [];
     results.forEach((result) =>
       result.forEach((item) => {
@@ -247,7 +248,15 @@ function SelectedQuiz() {
         ...completedBy,
         participantsList: true,
       });
-      console.log(currentUser);
+      participantsArr.forEach((participant) => {
+        if(participant.email ===email){
+          setQuizAvailable({
+            ...quizAvailable,
+            userCompleted: true,
+
+          })
+        }
+      })
     } else {
       setCompletedBy({
         ...completedBy,
@@ -471,11 +480,11 @@ function SelectedQuiz() {
           sname: response.data.user.Sname,
         });
         const accountEmail = response.data.user._id;
-        setCurrentUser(accountEmail);
         if (
           creator === accountEmail ||
           members.includes(accountEmail) === true
         ) {
+          getSelectedQuiz(accountEmail);
           checkUserType(response.data.user.UserType, accountEmail, creator);
         } else {
           navigate("/group/" + groupId);
@@ -517,7 +526,7 @@ function SelectedQuiz() {
         console.log("Data successfully loaded");
 
         if (!unmounted) {
-          getSelectedQuiz();
+          //getSelectedQuiz();
           getGroupData();
         }
       }, 0);
@@ -536,7 +545,6 @@ function SelectedQuiz() {
       <BackButton destination={"quiz/" + groupId}></BackButton>
       <h3>{quizData.title}</h3>
 
-      <button onClick={handleTest}>test</button>
 
       {view.teacherMain && (
         <Grid>
@@ -653,7 +661,6 @@ function SelectedQuiz() {
 
           {quizAvailable.notAvailableEnd && <p>Quiz ended</p>}
 
-          <button onClick={gradeMCQ}>test</button>
 
           {quizAvailable.available && (
             <div>
@@ -669,6 +676,12 @@ function SelectedQuiz() {
                 Start Quiz
               </Button>
             </div>
+          )}
+
+          {quizAvailable.userCompleted && (
+            <Grid>
+              <p>Quiz has already been completed.</p>
+            </Grid>
           )}
 
           {quizAvailable.start && (

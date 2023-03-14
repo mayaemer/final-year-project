@@ -540,7 +540,7 @@ function Quiz() {
 
         if (!unmounted) {
           getGroupData();
-          getQuiz();
+          //getQuiz();
         }
       }, 0);
 
