@@ -424,7 +424,7 @@ app.post("/joinGroup", (req, res) => {
       console.log(result.password);
       bcrypt.compare(req.body.password, result.password, (err, response) => {
         if (response === true) {
-          console.log("test");
+          //console.log("test");
           addMember(req.body.user, id, res);
         } else {
           res.send({ message: "Incorrect password." });
@@ -443,6 +443,7 @@ function addMember(user, group, res) {
 }
 
 app.post("/deleteGroup", (req, res) => {
+  const groupId = req.body.ID;
   const id = ObjectId(req.body.ID);
   const pass = req.body.Pass;
 
@@ -451,7 +452,10 @@ app.post("/deleteGroup", (req, res) => {
     .then((result) => {
       bcrypt.compare(pass, result.password, (response, err) => {
         if (response) {
-          deleteItem(res, "groups", id);
+          //deleteItem(res, "groups", id);
+          performDelete(id, groupId)
+          .then((result) =>  res.send(result))
+          .catch((e) => console.log(e))
         } else {
           res.send(err);
         }
@@ -459,6 +463,19 @@ app.post("/deleteGroup", (req, res) => {
     })
     .catch((e) => console.error(e));
 });
+
+async function performDelete(id, groupId){
+  try{
+    const groupDelete = await deleteSingle('groups', id);
+    console.log(groupDelete)
+    await deleteGroupItems('fileuploads', groupId);
+    await deleteGroupItems('questions', groupId);
+    await deleteGroupItems('quiz', groupId);
+
+  }catch(e) {
+    console.log(e)
+  }
+}
 
 app.post("/deleteQuiz", (req, res) => {
   const id = ObjectId(req.body.qid);
@@ -691,6 +708,28 @@ function deleteItem(res, collection, data) {
       .catch((e) => res.send(e));
   } catch (e) {
     res.send(e);
+  }
+}
+
+function deleteSingle(collection, data){
+  try {
+    db.collection(collection)
+      .deleteOne({ _id: data })
+      .then((result) => {return result})
+      .catch((e) => {return e});
+  } catch (e) {
+    {return e};
+  }
+}
+
+function deleteGroupItems(collection, data){
+  try {
+    db.collection(collection)
+      .deleteMany({ group: data })
+      .then((result) => {return result})
+      .catch((e) => {return e});
+  } catch (e) {
+    {return e};
   }
 }
 

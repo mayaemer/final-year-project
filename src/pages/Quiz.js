@@ -163,11 +163,15 @@ function Quiz() {
       add: false,
       remove: true,
     });
-    setQuizDisplay(false);
+    setQuizDisplay({
+      ...quizDisplay,
+      main: false,
+    });
   };
 
   const closeForm = () => {
     setQuizDisplay({
+      ...quizDisplay,
       main: true,
     });
     setCreateForm({
@@ -327,9 +331,9 @@ function Quiz() {
       const answerToSet = editQuestion.answers.find(
         (a) => a.id === answerOption
       );
-      if(answerToSet.correct === true){
+      if (answerToSet.correct === true) {
         answerToSet.correct = false;
-      }else if (answerToSet.correct === false){
+      } else if (answerToSet.correct === false) {
         answerToSet.correct = true;
       }
     }

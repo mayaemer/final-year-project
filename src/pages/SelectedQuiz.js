@@ -7,7 +7,16 @@ import BackButton from "../components/BackButton";
 import $ from "jquery";
 import Button from "@mui/material/Button";
 import FormGroup from "@mui/material/FormGroup";
-import { Box, Checkbox, FormControlLabel, IconButton, Input } from "@mui/material";
+import {
+  Box,
+  Checkbox,
+  Drawer,
+  FormControlLabel,
+  IconButton,
+  Input,
+  List,
+  ListItem,
+} from "@mui/material";
 import Spinner from "react-bootstrap/Spinner";
 import Alert from "@mui/material/Alert";
 import Grid from "@mui/material/Grid";
@@ -20,10 +29,9 @@ function SelectedQuiz() {
 
   const navigate = useNavigate();
 
-
   const [quizData, setQuizData] = useState([]);
   const [questionData, setQuestionData] = useState([]);
-  const [selected, setSelected] = useState([]);
+  const [currentUser, setCurrentUser] = useState("");
   const [completedBy, setCompletedBy] = useState({
     participantsList: true,
     noParticipants: false,
@@ -80,11 +88,23 @@ function SelectedQuiz() {
     current: 0,
   });
 
+  const [currMark, setCurrMark] = useState({
+    qid: 0,
+    mark: 0,
+  });
+
   const handleMarks = (e) => {
-    setTextQuiz({
-      marks: parseInt(e.target.value),
-      qid: e.target.value,
+    const re = /^[0-9\b]+$/;
+
+    setCurrMark({
+      qid: e.target.id,
+      mark: e.target.value,
     });
+    if (e.target.value === "" || re.test(e.target.value)) {
+      if (e.target.value > 5) {
+      }
+    } else {
+    }
   };
 
   const saveMark = (e) => {};
@@ -103,6 +123,10 @@ function SelectedQuiz() {
           formatMcqAns(result);
         } else if (quizType.text === true) {
           formatTextQuizAns(result);
+          setTextQuiz({
+            ...textQuiz,
+            inputField: true,
+          });
         }
       }
     });
@@ -223,13 +247,14 @@ function SelectedQuiz() {
         ...completedBy,
         participantsList: true,
       });
+      console.log(currentUser);
     } else {
       setCompletedBy({
         ...completedBy,
         noParticipants: true,
       });
     }
-    console.log(participantList);
+    //console.log(participantList);
   };
 
   const checkDateTime = (startDateTime, endDateTime) => {
@@ -291,49 +316,6 @@ function SelectedQuiz() {
         }
       }
     }
-
-    // const setSelectedAnswer = selected.find((ans) => ans.id === qid);
-
-    // if (setSelectedAnswer === undefined) {
-    //   setSelected([
-    //     ...selected,
-    //     {
-    //       id: qid,
-    //       answer: [answer],
-    //     },
-    //   ]);
-    // } else if (setSelectedAnswer != undefined) {
-    //   if (setSelectedAnswer.answer.includes(answer) === true) {
-    //     for (let i = 0; i < setSelectedAnswer.answer.length; i++) {
-    //       if (setSelectedAnswer.answer[i] === answer) {
-    //         setSelectedAnswer.answer[i] = "undefined";
-    //       }
-    //     }
-    //   } else if (setSelectedAnswer.answer != answer) {
-    //     // add new item to existing array
-    //     setSelectedAnswer.answer = [...setSelectedAnswer.answer, answer];
-    //   }
-    // }
-  };
-
-  const filterUndefined = () => {
-    let selectedAnsArr = [];
-    //console.log(selected);
-    selected.map((sa) => {
-      //console.log(sa);
-      let selectedAnswerItem = sa;
-      const filteredAns = selectedAnswerItem.answer.filter(
-        (item) => item != "undefined"
-      );
-      let answerObject = {
-        qid: sa.id,
-        answer: filteredAns,
-      };
-
-      selectedAnsArr.push(answerObject);
-    });
-
-    return selectedAnsArr;
   };
 
   const gradeMCQ = () => {
@@ -489,6 +471,7 @@ function SelectedQuiz() {
           sname: response.data.user.Sname,
         });
         const accountEmail = response.data.user._id;
+        setCurrentUser(accountEmail);
         if (
           creator === accountEmail ||
           members.includes(accountEmail) === true
@@ -608,21 +591,24 @@ function SelectedQuiz() {
                 <p>Grade: {selectedUserData.grade}</p>
                 {quizType.text && (
                   <Grid>
-                    {selectedUserData.answers.map((ans) => (
+                    {selectedUserData.answers.map((ans, index) => (
                       <Grid>
                         <p>Q.{ans.id}</p>
                         <p>{ans.question}</p>
 
                         <p>{ans.answer}</p>
-                          <TextField
-                            id={ans.id}
-                            variant="outlined"
-                            sx={{ width: 50 }}
-                            size="small"
-                            onClick={saveMark}
-                            onChange={handleMarks}
-                          />
-                        <p>/1</p>
+                        <TextField
+                          id={ans.id}
+                          variant="outlined"
+                          sx={{ width: 80 }}
+                          size="small"
+                          onBlur={saveMark}
+                          name={index}
+                          onChange={handleMarks}
+                          defaultValue={currMark.mark}
+                        />
+
+                        <p>/5</p>
                       </Grid>
                     ))}
                   </Grid>
