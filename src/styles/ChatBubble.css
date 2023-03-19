@@ -1,0 +1,25 @@
+.chatbubble {
+    display: inline-block;
+    margin-top:10px;
+    margin-bottom:  10px;
+    padding: 10px;
+    border-radius: 20px;
+    max-width: 60%;
+    font-size: 16px;
+    line-height: 1.4;
+  }
+  
+  .chatbubble.currentUser {
+    background-color: #0084ff;
+    color: #fff;
+    text-align: right;
+    margin-left: 120px;
+  }
+  
+  .chatbubble.otherUser {
+    background-color: #f2f2f2;
+    color: #333;
+    text-align: left;
+    margin-left: 10px;
+
+  }

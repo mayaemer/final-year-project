@@ -9,9 +9,12 @@ import MenuList from "@mui/material/MenuList";
 import MenuItem from "@mui/material/MenuItem";
 import Spinner from "react-bootstrap/Spinner";
 import BackButton from "../components/BackButton";
-import Fab from "@mui/material/Fab";
+import {
+  postCommenSchema,
+  postQuestionSchema,
+} from "../Validations/Validation";
 import AddIcon from "@mui/icons-material/Add";
-import { TextField } from "@mui/material";
+import { Button, IconButton, TextField } from "@mui/material";
 import Refresh from "../components/Refresh";
 import Alert from "@mui/material/Alert";
 import Dropdown from "react-bootstrap/Dropdown";
@@ -43,18 +46,36 @@ function Questions() {
   const [addVisible, setAddVisible] = useState({
     questionForm: false,
     addBtn: true,
+    noQuestions: false,
+    showQuestions: false,
+    loading: false,
+    profanityError: false,
+    validationError: false,
   });
 
-  const [loading, setLoading] = useState(false);
+  const [selectedQuestion, setSelectedQuestion] = useState();
 
-  const [profanityError, setProfanityError] = useState(false);
+  const [editArr, setEditArr] = useState([]);
 
   const getQuestions = () => {
     const data = {
       ID: groupId,
     };
     Axios.post("http://localhost:3001/getQuestions", data).then((res) => {
-      setQuestions(res.data);
+      if (res.data.length > 0) {
+        setQuestions(res.data);
+        const i = res.data.length - 1;
+        setSelectedQuestion(res.data[i]);
+        setAddVisible({
+          ...addVisible,
+          showQuestions: true,
+        });
+      } else if (res.data.length === 0) {
+        setAddVisible({
+          ...addVisible,
+          noQuestions: true,
+        });
+      }
       console.log(res);
     });
   };
@@ -108,9 +129,13 @@ function Questions() {
 
   const getGroupData = () => {
     const data = { ID: groupId };
+    console.log(data)
     Axios.post("http://localhost:3001/groupInfo", data).then((res) => {
       setGroupInfo(res.data);
-      $("#groupTitle").css("background-image", "url(" + res.data.image.image + ")");
+      $("#groupTitle").css(
+        "background-image",
+        "url(" + res.data.image.image + ")"
+      );
       checkUser(res.data.members, res.data.creator);
     });
   };
@@ -132,9 +157,31 @@ function Questions() {
       ...addVisible,
       questionForm: true,
       addBtn: false,
+      showQuestions: false,
+      noQuestions: false,
     });
+  };
 
-    setProfanityError(false);
+  const closeForm = () => {
+    if (questions.length === 0) {
+      setAddVisible({
+        ...addVisible,
+        questionForm: false,
+        addBtn: true,
+        showQuestions: false,
+        noQuestions: true,
+        profanityError: false,
+      });
+    } else if (questions.length > 0) {
+      setAddVisible({
+        ...addVisible,
+        questionForm: false,
+        addBtn: true,
+        showQuestions: true,
+        noQuestions: false,
+        profanityError: false,
+      });
+    }
   };
 
   const handleChange = (e) => {
@@ -149,8 +196,13 @@ function Questions() {
   const submitQuestion = (e) => {
     e.preventDefault();
     const handleData = postQuestion;
-    setLoading(true);
-    handleVisibility();
+    setAddVisible({
+      ...addVisible,
+      loading: true,
+      questionForm: false,
+      showQuestions: false,
+      noQuestions: false,
+    });
 
     const data = {
       title: questionData.questionTitle,
@@ -181,13 +233,11 @@ function Questions() {
     Axios.post("http://localhost:3001/checkProfanity", data)
       .then((result) => {
         if (result.data.includes(1)) {
-          console.log(result.data);
+          console.log(result);
 
-          // const testFun = handleProfanity;
-          // testFun();
           handleProfanity(data);
         } else {
-          console.log(result.data);
+          console.log(result);
           // postQuestion();
           handleData();
         }
@@ -195,7 +245,7 @@ function Questions() {
       .catch((e) => console.log(e));
   };
 
-  const postQuestion = () => {
+  const postQuestion = async () => {
     const data = {
       title: questionData.questionTitle,
       textBody: questionData.questionBody,
@@ -204,11 +254,24 @@ function Questions() {
       group: groupInfo._id,
     };
 
-    Axios.post("http://localhost:3001/postQuestion", data)
-      .then((result) => {
-        Refresh();
-      })
-      .catch((e) => console.log(e));
+    const validate = await postQuestionSchema.isValid(data);
+
+    if (validate === true) {
+      try {
+        Axios.post("http://localhost:3001/postQuestion", data)
+          .then((result) => {
+            Refresh();
+          })
+          .catch((e) => console.log(e));
+      } catch (e) {
+        console.log(e);
+      }
+    } else {
+      setAddVisible({
+        ...addVisible,
+        validationError: true,
+      });
+    }
   };
 
   const postComment = async () => {
@@ -220,25 +283,60 @@ function Questions() {
       question: comment.questionId,
     };
 
-    await Axios.post("http://localhost:3001/postComment", data)
+    const validate = await postCommenSchema.isValid(data);
+    if (validate === true) {
+      try {
+        Axios.post("http://localhost:3001/postComment", data)
+          .then((result) => {
+            console.log(result);
+            getUpdated();
+            setComment({
+              commentBody: "",
+            });
+          })
+          .catch((e) => console.log(e));
+      } catch (e) {
+        console.error(e);
+      }
+    } else {
+      setAddVisible({
+        ...addVisible,
+        validationError: true,
+      });
+    }
+  };
+
+  const closeError = () => {
+    setAddVisible({
+      ...addVisible,
+      questionForm: true,
+      validationError: false,
+    });
+  };
+
+  const getUpdated = () => {
+    const data = {
+      id: selectedQuestion._id,
+    };
+    Axios.post("http://localhost:3001/getUpdated", data)
       .then((result) => {
         console.log(result);
-        Refresh();
+        setSelectedQuestion(result.data);
       })
       .catch((e) => console.log(e));
   };
 
   const handleProfanity = (profaneData) => {
-    console.log(profaneData);
-    setLoading(false);
-
+    //console.log(profaneData);
     setAddVisible({
       ...addVisible,
+      loading: false,
+      noQuestions: false,
+      showQuestions: false,
       questionForm: false,
       addBtn: true,
+      profanityError: true,
     });
-
-    setProfanityError(true);
 
     const data = {
       title: questionData.questionTitle,
@@ -257,11 +355,9 @@ function Questions() {
 
   const handleEdit = (e) => {
     const questionid = e.target.name;
-    const id = "#" + questionid;
-    const questionClass = "." + questionid;
-
-    $(id).hide();
-    $(questionClass).show();
+    if (!editArr.includes(questionid)) {
+      setEditArr([...editArr, questionid]);
+    }
   };
 
   const handleDelete = (e) => {
@@ -275,6 +371,16 @@ function Questions() {
         Refresh();
       })
       .catch((err) => console.error(err));
+  };
+
+  const showSelected = (e) => {
+    const selectedItem = e.target.id;
+    console.log(selectedQuestion);
+    questions.forEach((question) => {
+      if (question._id === selectedItem) {
+        setSelectedQuestion(question);
+      }
+    });
   };
 
   useEffect(() => {
@@ -307,73 +413,135 @@ function Questions() {
   }, []);
 
   return (
-    <div>
-      <div id="groupTitle">
+    <Grid>
+      <Grid id="groupTitle">
         <h1 id="groupHeader">{groupInfo.groupName}</h1>
-      </div>
-      <BackButton destination={"group/" + groupId}></BackButton>
-      <h3>Questions</h3>
-      <Grid lg={12} item container spacing={2} id="main">
-        <Grid item lg={3} md={3} xs={12}>
-          <Card id="groupCard">
-            <MenuList>
-              <h4>Categories</h4>
-              {questions.map((title) => (
-                <MenuItem>{title.title}</MenuItem>
-              ))}
-            </MenuList>
-          </Card>
-        </Grid>
-        <Grid item lg={9} md={9} xs={12}>
-          {addVisible.addBtn && (
-            <Fab name="questionForm" onClick={handleVisibility}>
-              <AddIcon name="questionForm"></AddIcon>
-            </Fab>
-          )}
+      </Grid>
+      <Grid>
+        <Card id="groupCard">
+          <Grid lg={12} item container spacing={2} id="main">
+            <Grid item lg={12} md={12} xs={12}>
+              <h3 id="header">Questions</h3>
+            </Grid>
+            <Grid item lg={1} md={1} xs={1} id="btnSection">
+              <BackButton destination={"group/" + groupId}></BackButton>
+            </Grid>
+            <Grid item lg={1} md={1} xs={1} id="btnSection">
+              {addVisible.addBtn && (
+                <IconButton name="questionForm" onClick={handleVisibility}>
+                  <AddIcon name="questionForm"></AddIcon>
+                </IconButton>
+              )}
+            </Grid>
+            <Grid item lg={10} md={10} xs={10}></Grid>
+            {addVisible.showQuestions && (
+              <Grid item lg={4} md={4} xs={12} id="menuSection">
+                <MenuList id="menu">
+                  {questions.map((title) => (
+                    <MenuItem
+                      id={title._id}
+                      onClick={showSelected}
+                      style={{
+                        backgroundColor:
+                          selectedQuestion._id === title._id
+                            ? "#bdbebf"
+                            : "#edeff2",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {title.title}
+                    </MenuItem>
+                  ))}
+                </MenuList>
+              </Grid>
+            )}
 
-          {loading && (
-            <div>
-              <p>Posting question..</p>
-              <Spinner animation="border" role="status">
-                <span className="visually-hidden">Posting...</span>
-              </Spinner>
-            </div>
-          )}
+            {addVisible.noQuestions && (
+              <Grid item lg={12} md={12} xs={12}>
+                <p>No questions have been posted.</p>
+              </Grid>
+            )}
 
-          {profanityError && (
-            <Alert severity="error">
-              Profanity detected. Question will not be posted.
-            </Alert>
-          )}
+            {addVisible.loading && (
+              <Grid item lg={12} md={12} xs={12}>
+                <p>Posting question..</p>
+                <Spinner animation="border" role="status">
+                  <span className="visually-hidden">Posting...</span>
+                </Spinner>
+              </Grid>
+            )}
 
-          {addVisible.questionForm && (
-            <Card>
-              <form onSubmit={submitQuestion}>
-                <TextField
-                  id="outlined-basic"
-                  label="Question Title"
-                  variant="outlined"
-                  name="questionTitle"
-                  onChange={handleChange}
-                />
-                <TextField
-                  id="outlined-password-input"
-                  label="Question Body"
-                  type="outlined"
-                  name="questionBody"
-                  onChange={handleChange}
-                />
-                <button type="submit">Create</button>
-              </form>
-            </Card>
-          )}
+            {addVisible.profanityError && (
+              <Grid item lg={12} md={12} xs={12}>
+                <Alert severity="error">
+                  Profanity detected. Question will not be posted.
+                  <Button variant="outlined" onClick={closeForm}>
+                    Ok
+                  </Button>
+                </Alert>
+              </Grid>
+            )}
 
-          {questions.map((question) => (
-            <div>
-              <Card id="questionCard">
-                <div id={question._id}>
-                  <h4>{question.title}</h4>
-                  <div id={question.posterId} className="questionSettings">
+            {addVisible.questionForm && (
+              <Grid item lg={12} md={12} xs={12} id="edit">
+                <Grid item lg={12} md={12} xs={12}>
+                  <h5>Post Question</h5>
+                </Grid>
+
+                {addVisible.validationError && (
+                  <Grid item lg={12} md={12} xs={12} id="validationError">
+                    <Alert severity="error">
+                      Invalid input. All fields are required, maximum of 1000
+                      words.
+                      <Button variant="outlined" onClick={closeError}>
+                        OK
+                      </Button>
+                    </Alert>
+                  </Grid>
+                )}
+                <form onSubmit={submitQuestion}>
+                  <Grid item lg={12} md={12} xs={12} id="edititemText">
+                    <TextField
+                      fullWidth
+                      label="Question Title"
+                      variant="outlined"
+                      name="questionTitle"
+                      onChange={handleChange}
+                    />
+                  </Grid>
+                  <Grid item lg={12} md={12} xs={12} id="edititemText">
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={6}
+                      label="Question Body"
+                      type="outlined"
+                      name="questionBody"
+                      onChange={handleChange}
+                    />
+                  </Grid>
+                  <Grid item lg={12} md={12} xs={12}>
+                    <Button id="edititem" variant="outlined" type="submit">
+                      Create
+                    </Button>
+                    <Button
+                      id="edititem"
+                      variant="outlined"
+                      onClick={closeForm}
+                    >
+                      Cancel
+                    </Button>
+                  </Grid>
+                </form>
+              </Grid>
+            )}
+
+            {addVisible.showQuestions && (
+              <Grid container lg={8} md={8} xs={12} id="question">
+                <Grid item lg={12} md={12} xs={12}>
+                  <h2 id="heading">{selectedQuestion.title}</h2>
+
+                  <Grid item lg={1} md={1} xs={2} id="dropdown">
                     <Dropdown>
                       <Dropdown.Toggle
                         variant="light"
@@ -381,61 +549,62 @@ function Questions() {
                       ></Dropdown.Toggle>
 
                       <Dropdown.Menu>
-                        <Dropdown.Item name={question._id} onClick={handleEdit}>
+                        {/* <Dropdown.Item name={question._id} onClick={handleEdit}>
                           Edit Post
-                        </Dropdown.Item>
+                        </Dropdown.Item> */}
                         <Dropdown.Item
-                          name={question._id}
+                          name={selectedQuestion._id}
                           onClick={handleDelete}
                         >
                           Delete Post
                         </Dropdown.Item>
                       </Dropdown.Menu>
                     </Dropdown>
-                  </div>
-                  <hr></hr>
-                  <p>{question.textBody}</p>
-                  <p>{question.poster}</p>
-                  <p>{question.dateTime}</p>
-                </div>
-                <div id="editForm" class={question._id}>
-                  <form onSubmit={submitQuestion}>
-                    <TextField
-                      id="outlined-multiline-flexible"
-                      multiline
-                      maxRows={4}
-                      defaultValue={question.questionTitle}
-                      onChange={handleChange}
-                    />
-                    <TextField
-                      id="outlined-multiline-flexible"
-                      multiline
-                      maxRows={4}
-                      defaultValue={question.questionBody}
-                      onChange={handleChange}
-                    />
-                    <button type="submit">Save</button>
-                  </form>
-                </div>
-                <div>
-                  <hr></hr>
-                  <h6>Comments</h6>
+                  </Grid>
+                  <Grid item lg={12} md={12} xs={12} id="subheading">
+                    <p id="dateTimeQuestion">
+                      {selectedQuestion.poster} posted at{" "}
+                      {selectedQuestion.dateTime}
+                    </p>
+                  </Grid>
 
-                  {question.comments.map((comment) => (
-                    <div id="commentSec">
-                      <p id='commenter'>{comment[0][1]}</p>
-                      <p>{comment[0][0]}</p>
-                      <p>{comment[0][3]}</p>
-                    </div>
-                  ))}
+                  <Grid item lg={12} md={12} xs={12}>
+                    <p id="questionBody">{selectedQuestion.textBody}</p>
+                  </Grid>
+                </Grid>
+                {editArr.includes(selectedQuestion._id) && (
+                  <div id="editForm" class={selectedQuestion._id}>
+                    <form onSubmit={submitQuestion}>
+                      <TextField
+                        id="outlined-multiline-flexible"
+                        multiline
+                        maxRows={4}
+                        defaultValue={selectedQuestion.questionTitle}
+                        onChange={handleChange}
+                      />
+                      <TextField
+                        id="outlined-multiline-flexible"
+                        multiline
+                        maxRows={4}
+                        defaultValue={selectedQuestion.questionBody}
+                        onChange={handleChange}
+                      />
+                      <button type="submit">Save</button>
+                    </form>
+                  </div>
+                )}
+
+                <Grid item lg={12} md={12} xs={12} id="commentSection">
                   <form>
                     <TextField
                       id="filled-multiline-flexible"
                       multiline
                       placeholder="Write a comment.."
                       maxRows={4}
+                      fullWidth
                       variant="filled"
-                      name={question._id}
+                      value={comment.commentBody}
+                      name={selectedQuestion._id}
                       onChange={(e) =>
                         setComment({
                           ...comment,
@@ -446,13 +615,20 @@ function Questions() {
                       onKeyDown={handleKey}
                     />
                   </form>
-                </div>
-              </Card>
-            </div>
-          ))}
-        </Grid>
+                  {selectedQuestion.comments.map((comment) => (
+                    <Grid item lg={12} md={12} xs={12} id="comment">
+                      <p id="commenter">{comment[0][1]}</p>
+                      <p id="dateTime">{comment[0][3]}</p>
+                      <p id="textBody">{comment[0][0]}</p>
+                    </Grid>
+                  ))}
+                </Grid>
+              </Grid>
+            )}
+          </Grid>
+        </Card>
       </Grid>
-    </div>
+    </Grid>
   );
 }
 

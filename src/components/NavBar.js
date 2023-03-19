@@ -25,15 +25,13 @@ function NavBar() {
       <Navbar bg="dark" variant="dark">
         <Container>
           <Nav className="me-auto">
-            <Nav.Link href="/">Home</Nav.Link>
-            <Nav.Link href="/Groups">Groups</Nav.Link>
+            <Nav.Link href="/Home">Home</Nav.Link>
             <Nav.Link href="/Discover">Discover</Nav.Link>
             <NavDropdown
               id="nav-dropdown-dark-example"
               title={<PersonFill />}
               menuVariant="dark"
             >
-              <NavDropdown.Item href="/profile">Profile</NavDropdown.Item>
               <NavDropdown.Item onClick={handleLogout}>Logout</NavDropdown.Item>
             </NavDropdown>
           </Nav>

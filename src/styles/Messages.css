@@ -1,0 +1,14 @@
+#chatBody, #sendMessage{
+    position: relative;
+    overflow-x: hidden;
+}
+
+#chatBody{
+    max-height: 65%;
+}
+
+#dummy{
+    color: white;
+    font-size: 65px;
+    height: 50%;
+}

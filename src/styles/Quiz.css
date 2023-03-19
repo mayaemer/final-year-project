@@ -1,7 +1,4 @@
-.savedQuestion {
-    background-color: #F8F8F8;
-    border: 1px solid lightgray;
-}
+
 
 #questionSection{
     background-color: white;
@@ -10,10 +7,57 @@
     border: 2px solid lightgrey;
 }
 
-#question {
-    width: 300%;
+#questionForm {
+    margin-bottom: 2%;
 }
 
-#true {
-    background-color: aqua;
+#tableHead {
+    font-size: larger;
 }
+
+a {
+    color: black;
+    text-decoration: none;
+    font-size: large;
+}
+
+#startEnd {
+    font-size: small;
+    color: grey;
+    margin: 2%;
+}
+
+#link {
+    margin: 2%;
+}
+
+#textBox {
+    margin-bottom: 2%;
+}
+
+#quizForm {
+    position: relative;
+    top: -20px;
+}
+
+#qNum {
+    font-size: larger;
+}
+
+#questionBtn {
+    margin: 2%;
+}
+
+#question {
+    border: 1px solid lightgray;
+}
+
+.questionForm, .savedQuestion {
+    background-color: #F8F8F8;
+    margin-left: 1.5%;
+}
+
+#answer, #correctCheck, #questionText {
+    background-color: white;
+}
+

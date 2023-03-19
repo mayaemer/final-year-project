@@ -7,23 +7,15 @@ import BackButton from "../components/BackButton";
 import $ from "jquery";
 import Button from "@mui/material/Button";
 import FormGroup from "@mui/material/FormGroup";
-import {
-  Box,
-  Checkbox,
-  Drawer,
-  FormControlLabel,
-  IconButton,
-  Input,
-  List,
-  ListItem,
-} from "@mui/material";
+import { Checkbox, FormControlLabel, IconButton } from "@mui/material";
 import Spinner from "react-bootstrap/Spinner";
 import Alert from "@mui/material/Alert";
 import Grid from "@mui/material/Grid";
 import Card from "@mui/material/Card";
 import TextField from "@mui/material/TextField";
 import RemoveIcon from "@mui/icons-material/Remove";
-import e from "cors";
+import Refresh from "../components/Refresh";
+import { ViewQuilt } from "@mui/icons-material";
 
 function SelectedQuiz() {
   const { groupId, quizId } = useParams("/:groupId/:quizId");
@@ -32,27 +24,22 @@ function SelectedQuiz() {
 
   const [quizData, setQuizData] = useState([]);
   const [questionData, setQuestionData] = useState([]);
-  const [selected, setSelected] = useState([]);
   const [completedBy, setCompletedBy] = useState({
     participantsList: true,
     noParticipants: false,
   });
 
+  const [inputError, setInputError] = useState([]);
   const [participantList, setParticipantList] = useState([]);
-  const [selectedUserData, setSelectedUserData] = useState({
-    email: "",
-    fname: "",
-    sname: "",
-    grade: "",
-    end: "",
-    answers: [],
-  });
+  const [selectedUserData, setSelectedUserData] = useState({});
 
   const [view, setView] = useState({
     teacherMain: false,
     teacherQuizInfo: false,
     teacherReview: false,
     student: false,
+    gradeQuiz: false,
+    gradeBtn: false,
   });
 
   const [groupInfo, setGroupInfo] = useState([]);
@@ -69,7 +56,7 @@ function SelectedQuiz() {
     notAvailableEnd: false,
     loading: false,
     complete: false,
-    userCompleted: false
+    userCompleted: false,
   });
 
   const [quizType, setQuizType] = useState({
@@ -95,34 +82,71 @@ function SelectedQuiz() {
     mark: 0,
   });
 
+  const [savedMarks, setSavedMarks] = useState([]);
+
+  const [errorMsg, setErrorMsg] = useState("");
+
   const handleMarks = (e) => {
     const re = /^[0-9\b]+$/;
-
-    setCurrMark({
-      qid: e.target.id,
-      mark: e.target.value,
-    });
-    if (e.target.value === "" || re.test(e.target.value)) {
-      if (e.target.value > 5) {
+    const qid = e.target.id;
+    const mark = e.target.value;
+    if (mark === "" || re.test(mark)) {
+      if (mark > 5) {
+        setErrorMsg("Exceeds maximum mark.");
+        setError(qid);
+      } else if (mark <= 5) {
+        setCurrMark({
+          qid: qid,
+          mark: mark,
+        });
+        unsetError(qid);
       }
     } else {
+      setErrorMsg("Must be a numeric value.");
+      setError(qid);
     }
   };
 
-  const saveMark = (e) => {};
+  const unsetError = (qid) => {
+    const intQid = parseInt(qid);
+    if (inputError.includes(intQid)) {
+      let filteredArr = inputError.filter((item) => item !== intQid);
+      setInputError(filteredArr);
+    }
+  };
 
-  
+  const setError = (qid) => {
+    const intQid = parseInt(qid);
+    if (!inputError.includes(qid)) {
+      setInputError([...inputError, intQid]);
+    }
+  };
+
+  const saveMark = () => {
+    const markObj = {
+      qid: currMark.qid,
+      mark: currMark.mark,
+    };
+    const setSaved = savedMarks.find((mark) => mark.qid === currMark.qid);
+
+    if (setSaved != undefined) {
+      setSaved.mark = currMark.mark;
+    } else if (setSaved === undefined) {
+      setSavedMarks([...savedMarks, markObj]);
+    }
+  };
 
   const showUsersQuiz = (e) => {
     setView({
       ...view,
       teacherQuizInfo: false,
       teacherReview: true,
+      gradeBtn: true,
     });
     const selectedUser = e.target.id;
     quizData.results.forEach((result) => {
       //console.log(result[0])
-      if (result[0]["userEmail"] === selectedUser) {
+      if (result["userEmail"] === selectedUser) {
         if (quizType.mcq === true) {
           formatMcqAns(result);
         } else if (quizType.text === true) {
@@ -136,6 +160,22 @@ function SelectedQuiz() {
     });
   };
 
+  const showGradeQuiz = () => {
+    setView({
+      ...view,
+      gradeQuiz: true,
+      gradeBtn: false,
+    });
+  };
+
+  const cancelGrade = () => {
+        setView({
+      ...view,
+      gradeQuiz: false,
+      gradeBtn: true,
+    });
+  }
+
   const formatMcqAns = (data) => {
     let ansObjArr = [];
     for (let i = 0; i < quizData.questions.length; i++) {
@@ -147,15 +187,15 @@ function SelectedQuiz() {
     }
 
     for (let i = 0; i < ansObjArr.length; i++) {
-      ansObjArr[i].questions.answers = data[0]["answers"][i];
+      ansObjArr[i].questions.answers = data["answers"][i];
     }
 
     setSelectedUserData({
-      userEmail: data[0]["userEmail"],
-      userFname: data[0]["userFname"],
-      userSname: data[0]["userSname"],
-      end: data[0]["end"],
-      grade: data[0]["grade"],
+      userEmail: data["userEmail"],
+      userFname: data["userFname"],
+      userSname: data["userSname"],
+      end: data["end"],
+      grade: data["grade"],
       answers: ansObjArr,
     });
   };
@@ -164,22 +204,22 @@ function SelectedQuiz() {
     //console.log(data);
     const questionAnsArr = [];
     for (let i = 0; i < quizData.questions.length; i++) {
-      if (quizData.questions[i]["id"] == data[0]["answers"][i]["qid"]) {
+      if (quizData.questions[i]["id"] == data["answers"][i]["qid"]) {
         const questionAns = {
           id: quizData.questions[i]["id"],
           question: quizData.questions[i]["question"],
-          answer: data[0]["answers"][i]["answer"],
+          answer: data["answers"][i]["answer"],
         };
         questionAnsArr.push(questionAns);
       }
     }
     setSelectedUserData({
       ...selectedUserData,
-      userEmail: data[0]["userEmail"],
-      userFname: data[0]["userFname"],
-      userSname: data[0]["userSname"],
-      end: data[0]["end"],
-      grade: data[0]["grade"],
+      userEmail: data["userEmail"],
+      userFname: data["userFname"],
+      userSname: data["userSname"],
+      end: data["end"],
+      grade: data["grade"],
       answers: questionAnsArr,
     });
   };
@@ -196,15 +236,16 @@ function SelectedQuiz() {
     const data = {
       ID: quizId,
     };
-    Axios.post("http://localhost:3001/getSelectedQuiz", data).then((res) => {
-      setQuizData(res.data);
-      checkDateTime(res.data.start, res.data.end);
-      setQuestionData(res.data.questions);
-      getQuizParticipants(res.data.results, accountEmail);
-      checkQuizType(res.data.type);
-      console.log(res);
-    })
-    .catch((e) =>  console.log(e));
+    Axios.post("http://localhost:3001/getSelectedQuiz", data)
+      .then((res) => {
+        setQuizData(res.data);
+        checkDateTime(res.data.start, res.data.end);
+        setQuestionData(res.data.questions);
+        getQuizParticipants(res.data.results, accountEmail);
+        checkQuizType(res.data.type);
+        console.log(res);
+      })
+      .catch((e) => console.error(e));
   };
 
   const checkQuizType = (type) => {
@@ -224,23 +265,21 @@ function SelectedQuiz() {
 
   const getQuizParticipants = (results, email) => {
     const participantsArr = [];
-    results.forEach((result) =>
-      result.forEach((item) => {
-        if (
-          item.userEmail != "" &&
-          item.userSname != "" &&
-          item.userEmail != ""
-        ) {
-          const participantData = {
-            fname: item.userFname,
-            sname: item.userSname,
-            email: item.userEmail,
-          };
+    results.forEach((item) => {
+      if (
+        item.userEmail != "" &&
+        item.userSname != "" &&
+        item.userEmail != ""
+      ) {
+        const participantData = {
+          fname: item.userFname,
+          sname: item.userSname,
+          email: item.userEmail,
+        };
 
-          participantsArr.push(participantData);
-        }
-      })
-    );
+        participantsArr.push(participantData);
+      }
+    });
 
     if (participantsArr.length > 0) {
       setParticipantList(participantsArr);
@@ -249,14 +288,13 @@ function SelectedQuiz() {
         participantsList: true,
       });
       participantsArr.forEach((participant) => {
-        if(participant.email ===email){
+        if (participant.email === email) {
           setQuizAvailable({
             ...quizAvailable,
             userCompleted: true,
-
-          })
+          });
         }
-      })
+      });
     } else {
       setCompletedBy({
         ...completedBy,
@@ -325,6 +363,35 @@ function SelectedQuiz() {
         }
       }
     }
+  };
+
+  const saveGrade = () => {
+    const grade = totalGrade();
+    console.log(console.log(selectedUserData));
+
+    const data = {
+      qid: quizData._id,
+      uid: selectedUserData.userEmail,
+      grade: grade,
+    };
+
+    Axios.post("http://localhost:3001/updateGrade", data)
+      .then((result) => {
+        console.log(result);
+        Refresh();
+      })
+      .catch((e) => console.error(e));
+  };
+
+  const totalGrade = () => {
+    let totalMarks = 0;
+    let totalAvailableMarks = quizData.questions.length * 5;
+    savedMarks.forEach((question) => {
+      totalMarks += parseInt(question.mark);
+    });
+
+    const total = 100 * (totalMarks / totalAvailableMarks);
+    return total;
   };
 
   const gradeMCQ = () => {
@@ -413,7 +480,7 @@ function SelectedQuiz() {
           answerArr.push(completeAnswer);
         }
 
-        formatToSend(answerArr);
+        formatToSend(answerArr, "-");
       }
     }
   };
@@ -480,9 +547,13 @@ function SelectedQuiz() {
           sname: response.data.user.Sname,
         });
         const accountEmail = response.data.user._id;
+        const membersArr = [];
+        members.forEach((member) => {
+          membersArr.push(member.email);
+        });
         if (
-          creator === accountEmail ||
-          members.includes(accountEmail) === true
+          creator.email === accountEmail ||
+          membersArr.includes(accountEmail) === true
         ) {
           getSelectedQuiz(accountEmail);
           checkUserType(response.data.user.UserType, accountEmail, creator);
@@ -494,13 +565,13 @@ function SelectedQuiz() {
   };
 
   const checkUserType = async (usertype, email, creator) => {
-    if (usertype === "Teacher" && email === creator) {
+    if (usertype === "Teacher" && email === creator.email) {
       setView({
         ...view,
         teacherMain: true,
         teacherQuizInfo: true,
       });
-    } else {
+    } else if (usertype === "Student") {
       setView({
         ...view,
         student: true,
@@ -544,7 +615,6 @@ function SelectedQuiz() {
       </div>
       <BackButton destination={"quiz/" + groupId}></BackButton>
       <h3>{quizData.title}</h3>
-
 
       {view.teacherMain && (
         <Grid>
@@ -605,20 +675,39 @@ function SelectedQuiz() {
                         <p>{ans.question}</p>
 
                         <p>{ans.answer}</p>
-                        <TextField
-                          id={ans.id}
-                          variant="outlined"
-                          sx={{ width: 80 }}
-                          size="small"
-                          onBlur={saveMark}
-                          name={index}
-                          onChange={handleMarks}
-                          defaultValue={currMark.mark}
-                        />
+                        {view.gradeQuiz && (
+                          <Grid>
+                            <TextField
+                              id={ans.id}
+                              variant="outlined"
+                              sx={{ width: 80 }}
+                              size="small"
+                              onBlur={saveMark}
+                              name={index}
+                              onChange={handleMarks}
+                              defaultValue={currMark.mark}
+                            />
+                            <p>/5</p>
+                          </Grid>
+                        )}
 
-                        <p>/5</p>
+                        {inputError.includes(ans.id) && <p>{errorMsg}</p>}
                       </Grid>
                     ))}
+                    {view.gradeQuiz && (
+                      <Grid>
+                        <Button variant="outlined" onClick={saveGrade}>
+                          Save
+                        </Button>
+                        <Button variant="outlined" onClick={cancelGrade}>Cancel</Button>
+                      </Grid>
+                    )}
+
+                    {view.gradeBtn && (
+                      <Button variant="outlined" onClick={showGradeQuiz}>
+                        Grade Quiz
+                      </Button>
+                    )}
                   </Grid>
                 )}
 
@@ -648,7 +737,6 @@ function SelectedQuiz() {
                     ))}
                   </Grid>
                 )}
-                <Button variant="outlined">Save</Button>
               </Grid>
             )}
           </Card>
@@ -660,7 +748,6 @@ function SelectedQuiz() {
           {quizAvailable.notAvailableStart && <p>Quiz not available yet</p>}
 
           {quizAvailable.notAvailableEnd && <p>Quiz ended</p>}
-
 
           {quizAvailable.available && (
             <div>

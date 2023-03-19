@@ -20,8 +20,8 @@ const { ObjectId } = require("mongodb");
 
 const BadWordsNext = require("bad-words-next");
 const en = require("bad-words-next/data/en.json");
-const { data } = require("jquery");
-const { emitWarning } = require("process");
+//const { data } = require("jquery");
+//const { emitWarning } = require("process");
 
 const profanityCheck = new BadWordsNext({ data: en });
 
@@ -116,12 +116,11 @@ app.get("/readfiles", (req, res) => {
 app.post("/deleteContent", (req, res) => {
   const id = ObjectId(req.body.contentid);
   if (req.body.filename === undefined) {
-    console.log(id)
+    console.log(id);
     deleteItem(res, "fileuploads", id);
-  }
-  else {
+  } else {
     const filename = req.body.filename;
-    removeFile(res, id, filename)
+    removeFile(res, id, filename);
   }
 });
 
@@ -258,7 +257,7 @@ app.post(
           bcrypt.compare(pass, result.Pass, (err, response) => {
             if (response) {
               const token = jwt.sign({ email }, "jwtSecret", {
-                expiresIn: 3600,
+                expiresIn: 86400,
               });
 
               req.session.user = result;
@@ -298,7 +297,7 @@ app.get("/logout", (req, res) => {
 
 app.post("/checkGroup", (req, res) => {
   const email = req.body.Email;
-  console.log(req.body);
+  //console.log(req.body);
   if (req.body.Usertype === "Teacher") {
     getTeachersGroups(email, res);
   } else if (req.body.Usertype === "Student") {
@@ -308,7 +307,7 @@ app.post("/checkGroup", (req, res) => {
 
 function getStudentGroups(email, res) {
   db.collection("groups")
-    .find({ members: email })
+    .find({ members: { $elemMatch: { email: email } } })
     .toArray(function (err, result) {
       if (err) console.log(err);
       res.send(result);
@@ -316,9 +315,9 @@ function getStudentGroups(email, res) {
 }
 
 function getTeachersGroups(email, res) {
-  console.log(email);
+  //console.log(email);
   db.collection("groups")
-    .find({ creator: email })
+    .find({ "creator.email": email })
     .toArray(function (err, result) {
       if (err) console.log(err);
       res.send(result);
@@ -326,8 +325,8 @@ function getTeachersGroups(email, res) {
 }
 
 app.post("/createGroup", (req, res) => {
-  console.log(req.body);
-  const email = req.body.Email;
+  //console.log(req.body);
+  const creator = req.body.creator;
   const gName = req.body.GroupName;
   const pass = req.body.Password;
   const confirm = req.body.Confirm;
@@ -341,7 +340,7 @@ app.post("/createGroup", (req, res) => {
         groupData = {
           groupName: gName,
           password: hash,
-          creator: email,
+          creator: creator,
           members: [],
           content: [],
           image: gimage,
@@ -414,14 +413,13 @@ app.post("/searchGroups", (req, res) => {
 
 app.post("/joinGroup", (req, res) => {
   const id = ObjectId(req.body.group);
+  // console.log(req.body.user);
   bcrypt.hash(req.body.password, saltRounds, (err, hash) => {
     if ((err) => console.log(err));
-    console.log(hash);
   });
   db.collection("groups")
     .findOne({ _id: id })
     .then((result) => {
-      console.log(result.password);
       bcrypt.compare(req.body.password, result.password, (err, response) => {
         if (response === true) {
           //console.log("test");
@@ -454,8 +452,8 @@ app.post("/deleteGroup", (req, res) => {
         if (response) {
           //deleteItem(res, "groups", id);
           performDelete(id, groupId)
-          .then((result) =>  res.send(result))
-          .catch((e) => console.log(e))
+            .then((result) => res.send(result))
+            .catch((e) => console.log(e));
         } else {
           res.send(err);
         }
@@ -464,16 +462,15 @@ app.post("/deleteGroup", (req, res) => {
     .catch((e) => console.error(e));
 });
 
-async function performDelete(id, groupId){
-  try{
-    const groupDelete = await deleteSingle('groups', id);
-    console.log(groupDelete)
-    await deleteGroupItems('fileuploads', groupId);
-    await deleteGroupItems('questions', groupId);
-    await deleteGroupItems('quiz', groupId);
-
-  }catch(e) {
-    console.log(e)
+async function performDelete(id, groupId) {
+  try {
+    const groupDelete = await deleteSingle("groups", id);
+    console.log(groupDelete);
+    await deleteGroupItems("fileuploads", groupId);
+    await deleteGroupItems("questions", groupId);
+    await deleteGroupItems("quiz", groupId);
+  } catch (e) {
+    console.log(e);
   }
 }
 
@@ -486,7 +483,7 @@ app.post("/checkProfanity", async (req, res) => {
   const body = req.body.textBody;
   const title = req.body.title;
 
-  console.log(title);
+  //console.log(title);
 
   if (profanityCheck.check(body) === false) {
     if (title === "undefined" && profanityCheck.check(title) === false) {
@@ -511,15 +508,15 @@ app.post("/checkProfanity", async (req, res) => {
 app.post("/handleProfanity", (req, res) => {
   const userEmail = req.body.authorEmail;
   const currDateTime = getCurrentDateTime();
+  const groupid = ObjectId(req.body.group);
 
   const profaneInfo = {
     questionTitle: req.body.title,
     questionBody: req.body.textBody,
     dateTime: currDateTime,
-    group: req.body.group,
   };
 
-  updateOne(res, "users", userEmail, profaneInfo);
+  updateOne(res, "groups", groupid, userEmail, profaneInfo);
 });
 
 app.post("/postQuestion", (req, res) => {
@@ -557,6 +554,11 @@ app.post("/getQuestions", (req, res) => {
   findMany(res, "questions", groupId);
 });
 
+app.post("/getUpdated", (req, res) => {
+  const qid = ObjectId(req.body.id);
+  findSingle(res, "questions", qid);
+});
+
 app.post("/deleteQuestion", (req, res) => {
   const questionID = ObjectId(req.body.ID);
   deleteItem(res, "questions", questionID);
@@ -586,6 +588,26 @@ app.post("/getSelectedQuiz", (req, res) => {
   findSingle(res, "quiz", quizId);
 });
 
+app.post("/updateGrade", (req, res) => {
+  const quizid = ObjectId(req.body.qid);
+  const uid = req.body.uid;
+  const grade = req.body.grade;
+  console.log(quizid)
+  console.log(uid)
+  updateGrade(quizid, "quiz", uid, grade, res);
+});
+
+function updateGrade(qid, collection, uid, grade, res) {
+  try {
+    db.collection(collection)
+    .updateOne({_id: qid, "results.userEmail": uid}, {$set: {"results.$.grade" : grade}})
+    .then((result) => res.send(result))
+    .catch((e) => console.log(e))
+  } catch (e) {
+    console.log(e);
+  }
+}
+
 app.post("/getContent", (req, res) => {
   const groupid = req.body.ID;
   findMany(res, "fileuploads", groupid);
@@ -605,6 +627,63 @@ app.post("/sendAnswers", (req, res) => {
   updateQuiz(res, "quiz", qid, answersData);
 });
 
+app.post("/getChats", (req, res) => {
+  const participantId = req.body.userid;
+  //console.log(participantId)
+  //console.log(req.body)
+  findAllChats(res, "chats", participantId);
+});
+
+app.post("/getUpdatedChat", (req, res) => {
+  const chatid = ObjectId(req.body.id);
+  //console.log(participantId)
+  findSingle(res, "chats", chatid);
+});
+
+app.post("/createChat", (req, res) => {
+  const chatData = {
+    participants: req.body.participants,
+    messages: [],
+  };
+  insertData(res, "chats", chatData);
+});
+
+app.post("/sendMessage", (req, res) => {
+  const date = new Date();
+  const messageData = {
+    _id: ObjectId,
+    sender: req.body.sender,
+    receiver: req.body.receiver,
+    message: req.body.message,
+    date:
+      date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate(),
+    time: date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds(),
+  };
+  const chat = ObjectId(req.body.chat);
+  sendMessage(chat, messageData, res);
+});
+
+function findAllChats(res, collection, email) {
+  try {
+    db.collection(collection)
+      .find({ participants: { $elemMatch: { email: email } } })
+      .toArray(function (err, result) {
+        if (err) res.send(err);
+        res.send(result);
+        //console.log(result);
+      });
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function sendMessage(chat, message, res) {
+  db.collection("chats")
+    .updateOne({ _id: chat }, { $push: { messages: message } })
+    .then((data) => res.send(data))
+    .catch((e) => res.send(e));
+}
+
 function pyProfanityCheck(res, title, body) {
   console.log(body);
   const python = spawn("python", ["checkProfanity.py", title, body]);
@@ -617,10 +696,10 @@ function pyProfanityCheck(res, title, body) {
   });
 }
 
-function updateOne(res, collection, email, data) {
+function updateOne(res, collection, groupid, email, data) {
   try {
     db.collection(collection)
-      .updateOne({ _id: email }, { $push: { profanityMonitoring: [data] } })
+      .updateOne({ _id: groupid, "members.email" : email }, { $push: { "members.$.profanityMonitoring": data } })
       .then((result) => {
         res.send(result);
       })
@@ -635,7 +714,7 @@ function updateOne(res, collection, email, data) {
 function updateQuiz(res, collection, qid, data) {
   try {
     db.collection(collection)
-      .updateOne({ _id: qid }, { $push: { results: [data] } })
+      .updateOne({ _id: qid }, { $push: { results: data } })
       .then((result) => {
         res.send(result);
       })
@@ -711,25 +790,37 @@ function deleteItem(res, collection, data) {
   }
 }
 
-function deleteSingle(collection, data){
+function deleteSingle(collection, data) {
   try {
     db.collection(collection)
       .deleteOne({ _id: data })
-      .then((result) => {return result})
-      .catch((e) => {return e});
+      .then((result) => {
+        return result;
+      })
+      .catch((e) => {
+        return e;
+      });
   } catch (e) {
-    {return e};
+    {
+      return e;
+    }
   }
 }
 
-function deleteGroupItems(collection, data){
+function deleteGroupItems(collection, data) {
   try {
     db.collection(collection)
       .deleteMany({ group: data })
-      .then((result) => {return result})
-      .catch((e) => {return e});
+      .then((result) => {
+        return result;
+      })
+      .catch((e) => {
+        return e;
+      });
   } catch (e) {
-    {return e};
+    {
+      return e;
+    }
   }
 }
 

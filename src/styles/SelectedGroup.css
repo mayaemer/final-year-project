@@ -12,6 +12,14 @@
   width: 90%;
 }
 
+#btn{
+  margin: 2%;
+  float: right;
+  margin-right: 100px;
+
+}
+
+
 #paperImage {
   width: 100%;
   height: 50%;
@@ -34,8 +42,10 @@
 
 #groupSettings {
   width: 85%;
-  margin: 50px;
+  margin-left: 3%;
   padding: 20px;
+  position: relative;
+  top: 15px;
 }
 
 #editBtn {
@@ -59,6 +69,15 @@
 #contentSection {
     position: relative;
     top: -50px;
+}
+
+#closeProfanityView {
+  position: relative;
+  top: -70px;
+}
+
+#deleteBtn {
+  margin: 2%;
 }
 
 

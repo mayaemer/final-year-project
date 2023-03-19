@@ -21,6 +21,7 @@ import formatItem from "../functions/helper.js";
 import Alert from "@mui/material/Alert";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import Spinner from "react-bootstrap/Spinner";
+import MessageButton from "../components/MessageButton";
 
 function Groups() {
   const navigate = useNavigate();
@@ -37,7 +38,12 @@ function Groups() {
     success: false,
     error: false,
   });
-  const [accountEmail, setAccountEmail] = useState("");
+  //const [accountEmail, setAccountEmail] = useState("");
+  const [currentUser, setCurrentUser] = useState({
+    email: "",
+    fname: "",
+    sname: "",
+  });
 
   const [groupName, setGroupName] = useState("");
   const [groupPass, setGroupPass] = useState("");
@@ -108,7 +114,11 @@ function Groups() {
   const checkUserType = async () => {
     await Axios.get("http://localhost:3001/check").then((response) => {
       if (response.data.loggedIn === true) {
-        setAccountEmail(response.data.user._id);
+        setCurrentUser({
+          email: response.data.user._id,
+          fname: response.data.user.Fname,
+          sname: response.data.user.Sname,
+        });
         const accountEmail = response.data.user._id;
         //console.log(accountEmail)
         if (response.data.user.UserType === "Teacher") {
@@ -130,6 +140,7 @@ function Groups() {
       if (res.data.length === 0) {
         setUsersGroups("You do not have any groups.");
       } else {
+        //console.log(res.data)
         seGroupList(res.data);
       }
     });
@@ -199,7 +210,7 @@ function Groups() {
       GroupName: groupName,
       Password: groupPass,
       Confirm: confirmPass,
-      Email: accountEmail,
+      creator: currentUser,
       Image: groupImage,
     };
     setNextForm(false);
@@ -249,10 +260,6 @@ function Groups() {
     Refresh();
   };
 
-  const handleRefresh = () => {
-    console.log("test");
-  };
-
   useEffect(() => {
     Axios.get("http://localhost:3001/isAuthenticated", {
       headers: {
@@ -261,7 +268,7 @@ function Groups() {
     }).then((response) => {
       const authenticated = response.data;
       if (authenticated === true) {
-        navigate("/Groups");
+        navigate("/Home");
       } else {
         navigate("/");
       }
@@ -286,11 +293,20 @@ function Groups() {
   return (
     <div>
       <NavBar></NavBar>
+      <Grid lg={12} item container spacing={2}>
+        <Grid item lg={10} md={10} xs={10}></Grid>
+        <Grid item lg={2} md={2} xs={2} id="messageBtn">
+          <MessageButton
+            currentUser={currentUser}
+            groups={groupList}
+            id="messageBtn"
+          />
+        </Grid>
+      </Grid>
       {groupSection && (
         <Card id="groupsCard">
           <Grid lg={12} item container spacing={2}>
             <Grid item lg={12} md={12} xs={12}>
-              <h4>My Groups</h4>
               {buttonVisibility && (
                 <IconButton
                   aria-label="addGroup"
@@ -300,6 +316,7 @@ function Groups() {
                   <AddIcon />
                 </IconButton>
               )}
+              <h4>My Groups</h4>
             </Grid>
             <hr />
             <Grid item lg={12} md={12} xs={12}>
@@ -320,7 +337,7 @@ function Groups() {
       )}
 
       {openForm && (
-        <Card id="createForm">
+        <Card id="groupsCard">
           <Grid lg={12} item container spacing={2}>
             <Grid item lg={12} md={12} xs={12}>
               {closeButton && (
@@ -399,7 +416,7 @@ function Groups() {
       )}
 
       {nextForm && (
-        <Card id="createForm">
+        <Card id="groupsCard">
           <Grid lg={12} item container spacing={2}>
             <Grid item lg={12} md={12} xs={12}>
               {closeButton && (
@@ -455,18 +472,9 @@ function Groups() {
       )}
 
       {creatingSpinner.area && (
-        <Card id="createForm">
+        <Card id="groupsCard">
           <Grid lg={12} item container spacing={2}>
             <Grid item lg={12} md={12} xs={12}>
-              {closeButton && (
-                <IconButton
-                  aria-label="addGroup"
-                  onClick={closeForm}
-                  id="formBtn"
-                >
-                  <RemoveIcon />
-                </IconButton>
-              )}
               <h4>Create Group</h4>
             </Grid>
             {creatingSpinner.loading && (
@@ -478,7 +486,7 @@ function Groups() {
             {creatingSpinner.success && (
               <Grid item lg={12} md={12} xs={12}>
                 <Alert severity="success" id="resultAlert">
-                  <p id="resultText">Group successfully created.</p>
+                  Group successfully created.{" "}
                   <Button variant="outlined" onClick={handleOk}>
                     Ok
                   </Button>

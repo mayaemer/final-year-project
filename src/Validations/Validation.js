@@ -59,3 +59,19 @@ export const createGroupSchema = yup.object().shape({
     .max(50, "Too many characters")
     .required("Must confirm password")
 });
+
+export const postQuestionSchema = yup.object().shape({
+  title: yup.string()
+  .max(50)
+  .required(),
+  textBody: yup.string()
+  .min(8)
+  .max(1000)
+  .required()
+})
+
+export const postCommenSchema = yup.object().shape({
+  textBody: yup.string()
+  .max(500)
+  .required()
+})

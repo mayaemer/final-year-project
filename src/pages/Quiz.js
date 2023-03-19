@@ -30,18 +30,14 @@ function Quiz() {
 
   const [groupInfo, setGroupInfo] = useState([]);
 
-  const [accountEmail, setAccountEmail] = useState("");
-
   const [quizArray, setQuizArray] = useState([]);
 
   const [buttonVisibility, setButtonVisibility] = useState({
     add: false,
-    remove: false,
   });
 
   const [quizDisplay, setQuizDisplay] = useState({
     main: true,
-    none: false,
     quizSelection: false,
     confirmDelete: false,
     deleteInProgress: false,
@@ -64,6 +60,7 @@ function Quiz() {
     loading: false,
     mcqEdit: false,
     mcqCreate: false,
+    textBtns: false
   });
 
   const [currentQuestion, setCurrentQuestion] = useState(1);
@@ -108,17 +105,16 @@ function Quiz() {
     });
   };
 
+  const [noQuiz, setNoQuiz] = useState(false);
+
   const getQuiz = (userEmail) => {
     const data = {
       ID: groupId,
     };
     Axios.post("http://localhost:3001/getQuiz", data).then((res) => {
       if (res.data.length === 0) {
-        setQuizDisplay({
-          ...quizDisplay,
-          none: true,
-          quizSelection: false,
-        });
+        console.log("test");
+        setNoQuiz(true);
       }
       checkCompletionStatus(res.data, userEmail);
     });
@@ -133,7 +129,7 @@ function Quiz() {
         quizDataCompletionArr.push(quiz);
       } else {
         quiz.results.forEach((result) => {
-          quizParticipants.push(result[0].userEmail);
+          quizParticipants.push(result.userEmail);
         });
         if (quizParticipants.includes(email) === true) {
           quiz.userCompletion = "Complete";
@@ -161,7 +157,6 @@ function Quiz() {
     setButtonVisibility({
       ...buttonVisibility,
       add: false,
-      remove: true,
     });
     setQuizDisplay({
       ...quizDisplay,
@@ -180,27 +175,40 @@ function Quiz() {
       first: false,
       mcq: false,
       text: false,
+      textBtns: false,
       tf: false,
+      mcqCreate: false,
       mcqEdit: false,
     });
     setButtonVisibility({
       ...buttonVisibility,
       add: true,
-      remove: false,
     });
+    setQuestion("");
+    setAnswers([
+      { id: "a", correct: false },
+      { id: "b", correct: false },
+      { id: "c", correct: false },
+      { id: "d", correct: false },
+    ]);
+    setQuestionsArray([1]);
+    setQuizToCreate([]);
+    setCurrentQuestion(1)
   };
 
   const checkUser = (members, creator) => {
     Axios.get("http://localhost:3001/check").then((response) => {
       if (response.data.loggedIn === true) {
-        setAccountEmail(response.data.user._id);
-        const accountEmail = response.data.user._id;
-        getQuiz(accountEmail);
-        if (
-          creator === accountEmail ||
-          members.includes(accountEmail) === true
-        ) {
-          checkUserType(response.data.user.UserType, creator, accountEmail);
+        const user = response.data.user._id;
+        getQuiz(user);
+
+        const membersArr = [];
+        members.forEach((member) => {
+          membersArr.push(member.email);
+        });
+
+        if (membersArr.includes(user) || creator.email === user) {
+          checkUserType(response.data.user.UserType, creator, user);
         } else {
           navigate("/group/" + groupId);
         }
@@ -209,11 +217,10 @@ function Quiz() {
   };
 
   const checkUserType = async (usertype, creator, email) => {
-    if (usertype === "Teacher" && creator === email) {
+    if (usertype === "Teacher" && creator.email === email) {
       setButtonVisibility({
         ...buttonVisibility,
         add: true,
-        remove: false,
       });
       setView({
         ...view,
@@ -223,7 +230,6 @@ function Quiz() {
       setButtonVisibility({
         ...buttonVisibility,
         add: false,
-        remove: false,
       });
       setView({
         ...view,
@@ -246,25 +252,34 @@ function Quiz() {
         ...createForm,
         first: false,
         text: true,
+        textBtns: true
       });
     } else {
       console.error("Error");
     }
-
     setButtonVisibility({
       add: false,
-      remove: true,
     });
   };
 
   // set the current question
   const addQuestion = () => {
     setAnswerInput(["a", "b", "c", "d"]);
-    setCreateForm({
-      ...createForm,
-      edit: false,
-      mcqCreate: true,
-    });
+
+    if (quizType === "MCQ") {
+      setCreateForm({
+        ...createForm,
+        edit: false,
+        mcqCreate: true,
+      });
+    }
+    if (quizType === "MCQ") {
+      setCreateForm({
+        ...createForm,
+        edit: false,
+        mcqCreate: true,
+      });
+    }
     setEditQuestion();
     const num = questionsArray.length;
     setQuestionsArray([...questionsArray, parseInt(num) + 1]);
@@ -277,7 +292,7 @@ function Quiz() {
   };
 
   const handleQuestionChange = (e) => {
-    if (e.target.id === "question") {
+    if (e.target.id === "questionText") {
       setQuestion(e.target.value);
     } else if (e.target.id === "answer") {
       const answerOption = e.target.name;
@@ -318,7 +333,7 @@ function Quiz() {
   };
 
   const editChange = (e) => {
-    if (e.target.id === "question") {
+    if (e.target.id === "questionText") {
       editQuestion.question = e.target.value;
     } else if (e.target.id === "answer") {
       const answerOption = e.target.name;
@@ -370,14 +385,15 @@ function Quiz() {
         edit: false,
         editMcq: false,
       });
+    } else {
+      setCreateForm({
+        ...createForm,
+        edit: false,
+        editMcq: false,
+      });
+      const num = questionsArray.length;
+      setCurrentQuestion(num);
     }
-    setCreateForm({
-      ...createForm,
-      edit: false,
-      editMcq: false,
-    });
-    const num = questionsArray.length;
-    setCurrentQuestion(num);
   };
 
   const resetQAstates = () => {
@@ -389,52 +405,6 @@ function Quiz() {
       { id: "d", correct: false },
     ]);
   };
-
-  // const mcqAnswers = (e) => {
-  //   const qid = e.target.name;
-  //   const aid = e.target.id;
-  //   const setQuestion = correctAnswers.find((q) => q.qid === qid);
-  //   //console.log(aid);
-  //   if (setQuestion === undefined) {
-  //     setCorrectAnswers([
-  //       ...correctAnswers,
-  //       {
-  //         qid: qid,
-  //         aid: [aid],
-  //       },
-  //     ]);
-  //   } else if (setQuestion != undefined) {
-  //     if (setQuestion.aid.includes(aid) === true) {
-  //       for (let i = 0; i < setQuestion.aid.length; i++) {
-  //         if (setQuestion.aid[i] === aid) {
-  //           setQuestion.aid[i] = "undefined";
-  //         }
-  //       }
-  //     } else if (setQuestion.aid != aid) {
-  //       // add new item to existing array
-  //       setQuestion.aid = [...setQuestion.aid, aid];
-  //     }
-  //   }
-  // };
-
-  // const filterUndefined = () => {
-  //   let correctItemArray = [];
-
-  //   correctAnswers.map((qa) => {
-  //     let correctAnswerItem = qa;
-  //     const filteredAid = correctAnswerItem.aid.filter(
-  //       (item) => item != "undefined"
-  //     );
-  //     let answerObject = {
-  //       qid: qa.qid,
-  //       aid: filteredAid,
-  //     };
-
-  //     correctItemArray.push(answerObject);
-  //   });
-
-  //   return correctItemArray;
-  // };
 
   const removeAnswer = (e) => {
     // when not returning id currentTarget
@@ -483,7 +453,6 @@ function Quiz() {
     setQuizDisplay({
       ...quizDisplay,
       table: false,
-      deleteSection: true,
       confirmDelete: true,
     });
     quizArray.forEach((quiz) => {
@@ -550,97 +519,112 @@ function Quiz() {
     }, []);
   }, []);
 
-  const testt = () => {
-    console.log(quizToCreate);
-  };
+  const test = () => {
+    console.log(questionsArray)
+    console.log(currentQuestion)
+  }
 
   return (
-    <div>
-      <div id="groupTitle">
+    <Grid>
+      <Grid id="groupTitle">
         <h1 id="groupHeader">{groupInfo.groupName}</h1>
-      </div>
-      <button onClick={testt}>test</button>
-      <BackButton destination={"group/" + groupId}></BackButton>
-      <h3>Quizzes</h3>
-      {buttonVisibility.add && (
-        <IconButton aria-label="addGroup" onClick={openForm}>
-          <AddIcon />
-        </IconButton>
-      )}
-      {buttonVisibility.remove && (
-        <IconButton aria-label="addGroup" onClick={closeForm}>
-          <RemoveIcon />
-        </IconButton>
-      )}
+      </Grid>
+
+      <button onClick={test}>Test</button>
 
       {quizDisplay.main && (
-        <Card>
-          <Grid lg={12} item container spacing={2}>
+        <Card id="groupCard">
+          <Grid lg={12} item container>
             <Grid item lg={12} md={12} xs={12}>
-              {quizDisplay.deleteSection && (
-                <Grid>
-                  {quizDisplay.confirmDelete && (
-                    <Grid>
-                      <p>
-                        Please confirm you wish to delete the '
-                        {deleteQuiz.title}' quiz.
-                      </p>
-                      <Button variant="outlined" onClick={handleDeleteQuiz}>
-                        Confirm Delete
-                      </Button>
-                      <Button variant="outlined" onClick={cancelDelete}>
-                        Cancel
-                      </Button>
-                    </Grid>
-                  )}
-                  {quizDisplay.deleteInProgress && (
-                    <Grid>
-                      <p>Deleting quiz..</p>
-                      <Spinner></Spinner>
-                    </Grid>
-                  )}
-                </Grid>
-              )}
-              {quizDisplay.table && (
-                <Table bordered>
-                  <thead>
-                    <tr>
-                      <th>Quizzes</th>
-                      {view.student && <th>Completion Status</th>}
-                    </tr>
-                  </thead>
-                  {quizDisplay.none && <tr>No quizzes available.</tr>}
-
-                  {quizDisplay.quizSelection && (
-                    <tbody>
-                      {quizArray.map((quiz) => (
-                        <tr>
-                          <td>
-                            <Link to={"/Quiz/" + groupId + "/" + quiz._id}>
-                              {quiz.title}
-                            </Link>
-                            <p>Starts {quiz.start}</p>
-                            <p>Ends {quiz.end}</p>
-                          </td>
-                          {view.student && (
-                            <td>
-                              <p>{quiz.userCompletion}</p>
-                            </td>
-                          )}
-                          {view.teacher && (
-                            <td>
-                              <IconButton id={quiz._id}>
-                                <Delete id={quiz._id} onClick={confirmDelete} />
-                              </IconButton>
-                            </td>
-                          )}
-                        </tr>
-                      ))}
-                    </tbody>
-                  )}
-                </Table>
+              <h3 id="header">Quizzes</h3>
+            </Grid>
+            <Grid item lg={1} md={1} xs={1} id="btnSection">
+              <BackButton destination={"group/" + groupId}></BackButton>
+            </Grid>
+            <Grid item lg={1} md={1} xs={1} id="btnSection">
+              {buttonVisibility.add && (
+                <IconButton aria-label="addGroup" onClick={openForm}>
+                  <AddIcon />
+                </IconButton>
               )}
             </Grid>
+
+            {quizDisplay.confirmDelete && (
+              <Grid lg={12} item container>
+                <Grid item lg={12} md={12} xs={12}>
+                  <p>
+                    Please confirm you wish to delete the '{deleteQuiz.title}'
+                    quiz.
+                  </p>
+                </Grid>
+                <Grid item lg={12} md={12} xs={12}>
+                  <Button
+                    variant="outlined"
+                    onClick={handleDeleteQuiz}
+                    id="deleteBtn"
+                  >
+                    Confirm Delete
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={cancelDelete}
+                    id="deleteBtn"
+                  >
+                    Cancel
+                  </Button>
+                </Grid>
+              </Grid>
+            )}
+            {quizDisplay.deleteInProgress && (
+              <Grid item lg={12} md={12} xs={12}>
+                <p>Deleting quiz..</p>
+                <Spinner></Spinner>
+              </Grid>
+            )}
+
+            {quizDisplay.table && (
+              <Table bordered>
+                <thead>
+                  <tr>
+                    <th id="tableHead">Quiz</th>
+                    {view.student && <th>Completion Status</th>}
+                    {view.teacher && <th></th>}
+                  </tr>
+                </thead>
+                {noQuiz && <tr>No quizzes available.</tr>}
+
+                {quizDisplay.quizSelection && (
+                  <tbody>
+                    {quizArray.map((quiz) => (
+                      <tr>
+                        <td>
+                          <Link
+                            to={"/Quiz/" + groupId + "/" + quiz._id}
+                            id="link"
+                          >
+                            <a>{quiz.title}</a>
+                          </Link>
+                          <p id="startEnd">Starts {quiz.start}</p>
+                          <p id="startEnd">Ends {quiz.end}</p>
+                        </td>
+                        {view.student && (
+                          <td>
+                            <p>{quiz.userCompletion}</p>
+                          </td>
+                        )}
+                        {view.teacher && (
+                          <td>
+                            <IconButton id={quiz._id}>
+                              <Delete id={quiz._id} onClick={confirmDelete} />
+                            </IconButton>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                )}
+              </Table>
+            )}
           </Grid>
         </Card>
       )}
@@ -653,27 +637,29 @@ function Quiz() {
       )}
 
       {createForm.main && (
-        <Card id="createForm">
+        <Card id="groupCard">
           <Grid container spacing={2}>
             <Grid lg={12} md={12} xs={12}>
-              <h4>Create Quiz</h4>
-              <hr />
+              <h4 id="header">Create Quiz</h4>
+            </Grid>
+            <Grid item lg={1} md={1} xs={1} id="btnSection">
+              <IconButton aria-label="addGroup" onClick={closeForm}>
+                <RemoveIcon />
+              </IconButton>
             </Grid>
 
             {createForm.first && (
-              <Grid lg={12} md={12} xs={12}>
+              <Grid lg={12} md={12} xs={12} id="quizForm">
                 <form onSubmit={handleNext}>
-                  <Grid lg={12} md={12} xs={12}>
+                  <Grid lg={12} md={12} xs={12} id="textBox">
                     <TextField
-                      id="outlined-basic"
                       label="Quiz Title"
                       variant="outlined"
                       onChange={(e) => setQuizTitle(e.target.value)}
                     />
                   </Grid>
-                  <Grid lg={12} md={12} xs={12}>
+                  <Grid lg={12} md={12} xs={12} id="textBox">
                     <TextField
-                      id="outlined-select-usertype"
                       select
                       label="Select"
                       defaultValue=""
@@ -687,9 +673,8 @@ function Quiz() {
                       ))}
                     </TextField>
                   </Grid>
-                  <Grid lg={12} md={12} xs={12}>
+                  <Grid lg={12} md={12} xs={12} id="textBox">
                     <TextField
-                      id="datetime-local"
                       label="Start date and time"
                       type="datetime-local"
                       onChange={(e) => setStartDate(e.target.value)}
@@ -699,9 +684,8 @@ function Quiz() {
                       }}
                     />
                   </Grid>
-                  <Grid lg={12} md={12} xs={12}>
+                  <Grid lg={12} md={12} xs={12} id="textBox">
                     <TextField
-                      id="datetime-local"
                       label="End date and time"
                       type="datetime-local"
                       onChange={(e) => setEndDate(e.target.value)}
@@ -725,19 +709,19 @@ function Quiz() {
                     <p>Question {editQuestion.id}</p>
                   </Grid>
                   <Grid lg={12} md={12} xs={12}>
-                    <Button onClick={addQuestion}>
+                    {/* <Button onClick={addQuestion}>
                       <AddIcon />
                     </Button>
                     <Button>
                       <SettingsIcon />
-                    </Button>
+                    </Button> */}
                   </Grid>
-                  <Grid lg={12} md={12} xs={12}>
+                  <Grid lg={12} md={12} xs={12} id="textBox">
                     <TextField
                       sx={{
                         width: { sm: 300, md: 800 },
                       }}
-                      id="question"
+                      id="questionText"
                       defaultValue={editQuestion.question}
                       variant="outlined"
                       onChange={editChange}
@@ -747,7 +731,7 @@ function Quiz() {
                   {createForm.mcqEdit && (
                     <Grid>
                       {editQuestion.answers.map((ans) => (
-                        <Grid lg={12} md={12} xs={12}>
+                        <Grid lg={12} md={12} xs={12} id="textBox">
                           <Checkbox
                             id="correctCheck"
                             name={ans.id}
@@ -820,12 +804,12 @@ function Quiz() {
                         <SettingsIcon />
                       </Button>
                     </Grid>
-                    <Grid lg={12} md={12} xs={12}>
+                    <Grid lg={12} md={12} xs={12} id="textBox">
                       <TextField
                         sx={{
                           width: { sm: 300, md: 800 },
                         }}
-                        id="question"
+                        id="questionText"
                         label="Question"
                         variant="outlined"
                         onChange={handleQuestionChange}
@@ -841,29 +825,27 @@ function Quiz() {
                 {questionsArray.map((question) => (
                   <form id={question} className="questionForm">
                     <Grid lg={12} md={12} xs={12}>
-                      <p>Question {question}</p>
+                      <p id="qNum">Question {question}</p>
                     </Grid>
                     <Grid lg={12} md={12} xs={12}>
-                      <Button onClick={addQuestion}>
+                      {/* <IconButton onClick={addQuestion}>
                         <AddIcon />
-                      </Button>
-                      <Button>
-                        <SettingsIcon />
-                      </Button>
+                      </IconButton> */}
                     </Grid>
-                    <Grid lg={12} md={12} xs={12}>
+                    <Grid lg={12} md={12} xs={12} id="questionForm">
                       <TextField
                         sx={{
                           width: { sm: 300, md: 800 },
                         }}
-                        id="question"
+                        id="questionText"
                         label="Question"
                         variant="outlined"
                         onChange={handleQuestionChange}
+                        
                       />
                     </Grid>
                     {answerInput.includes("a") && (
-                      <Grid lg={12} md={12} xs={12}>
+                      <Grid lg={12} md={12} xs={12} id="questionForm">
                         <Checkbox
                           id="correctCheck"
                           name="a"
@@ -885,7 +867,7 @@ function Quiz() {
                       </Grid>
                     )}
                     {answerInput.includes("b") && (
-                      <Grid lg={12} md={12} xs={12}>
+                      <Grid lg={12} md={12} xs={12} id="questionForm">
                         <Checkbox
                           id="correctCheck"
                           name="b"
@@ -907,7 +889,7 @@ function Quiz() {
                       </Grid>
                     )}
                     {answerInput.includes("c") && (
-                      <Grid lg={12} md={12} xs={12}>
+                      <Grid lg={12} md={12} xs={12} id="questionForm">
                         <Checkbox
                           id="correctCheck"
                           name="c"
@@ -929,7 +911,7 @@ function Quiz() {
                       </Grid>
                     )}
                     {answerInput.includes("d") && (
-                      <Grid lg={12} md={12} xs={12}>
+                      <Grid lg={12} md={12} xs={12} id="questionForm">
                         <Checkbox
                           id="correctCheck"
                           name="d"
@@ -954,16 +936,39 @@ function Quiz() {
                 ))}
               </Grid>
             )}
-            <Button variant="outlined" onClick={addQuestion}>
-              Add Question
-            </Button>
-            <Button variant="outlined" onClick={saveQuiz}>
-              Save
-            </Button>
+            {createForm.mcq && (
+              <Grid lg={12} md={12} xs={12} id="questionForm">
+                <Button
+                  variant="outlined"
+                  onClick={addQuestion}
+                  id="questionBtn"
+                >
+                  Add Question
+                </Button>
+                <Button variant="outlined" onClick={saveQuiz} id="questionBtn">
+                  Save
+                </Button>
+              </Grid>
+            )}
+
+            {createForm.textBtns && (
+              <Grid lg={12} md={12} xs={12} id="questionForm">
+                <Button
+                  variant="outlined"
+                  onClick={addQuestion}
+                  id="questionBtn"
+                >
+                  Add Question
+                </Button>
+                <Button variant="outlined" onClick={saveQuiz} id="questionBtn">
+                  Save
+                </Button>
+              </Grid>
+            )}
           </Grid>
         </Card>
       )}
-    </div>
+    </Grid>
   );
 }
 

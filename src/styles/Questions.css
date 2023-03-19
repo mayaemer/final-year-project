@@ -1,24 +1,97 @@
-#editForm {
-    display: none;
-}
-
 .questionSettings {
-    display: none;
+  display: none;
 }
 
-#questionCard {
-    width: 80%;
-    margin: 2%;
+#groupCard {
+  margin-bottom: 2%;
 }
 
 #commentSec {
-    width: 80%;
-    border-top: 1px solid lightgray;
-    border-top-width: thin;
-    border-bottom: 1px solid lightgray;
-
+  width: 80%;
+  border-top: 1px solid lightgray;
+  border-top-width: thin;
+  border-bottom: 1px solid lightgray;
 }
 
 #commenter {
-    font-weight: bold;
+  font-weight: bold;
+  font-size: small;
 }
+
+#dropdown {
+  position: relative;
+  top: -30px;
+}
+
+#subheading {
+  position: relative;
+  top: -30px;
+}
+
+#heading {
+  margin: auto;
+}
+
+#menuSection {
+  position: relative;
+  top: -80px;
+}
+
+#question,
+#edit {
+  position: relative;
+  top: -50px;
+}
+
+#commentSection {
+  border: 2px solid #edeff2;
+  margin-left: 2%;
+}
+
+#comment {
+  border-top: 1px solid #edeff2;
+  padding: 5px;
+}
+
+#dateTime,
+#dateTimeQuestion {
+  font-size: small;
+  color: gray;
+}
+
+#textBody,
+#questionBody {
+  font-size: larger;
+}
+
+#questionBody {
+  padding: 5%;
+}
+
+#comment {
+  text-align: left;
+}
+
+#textBody,
+#commenter,
+#dateTime {
+  margin-left: 2%;
+}
+
+#dateTime {
+  position: relative;
+  top: -15px;
+}
+
+#edititem {
+  margin: 2%;
+}
+
+#edititemText, #validationError {
+  width: 50%;
+  margin: auto;
+  margin-top: 2%;
+  margin-bottom: 2%;
+
+}
+

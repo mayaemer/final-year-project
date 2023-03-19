@@ -16,7 +16,6 @@ import {
   List,
   ListItem,
   ListItemButton,
-  Divider,
 } from "@mui/material";
 import BackButton from "../components/BackButton";
 import AddIcon from "@mui/icons-material/Add";
@@ -49,7 +48,12 @@ function Content() {
     teacher: false,
     user: false,
   });
-  const [accountEmail, setAccountEmail] = useState("");
+  //const [accountEmail, setAccountEmail] = useState("");
+  const [currentUser, setCurrentUser] = useState({
+    email: "",
+    fname: "",
+    sname: "",
+  });
   const [filesArr, setFilesArr] = useState([]);
   const [contentTitle, setContentTitle] = useState("");
   const [selectedContent, setSelectedContent] = useState({
@@ -244,7 +248,7 @@ function Content() {
       });
       formData.append("title", contentTitle);
       formData.append("groupId", groupId);
-      formData.append("creator", accountEmail);
+      formData.append("creator", currentUser.email);
       filesArr.forEach((file) => {
         formData.append("files", file.file);
       });
@@ -314,13 +318,20 @@ function Content() {
   const checkUser = (members, creator) => {
     Axios.get("http://localhost:3001/check").then((response) => {
       if (response.data.loggedIn === true) {
-        setAccountEmail(response.data.user._id);
-        const accountEmail = response.data.user._id;
-        if (
-          creator === accountEmail ||
-          members.includes(accountEmail) === true
-        ) {
-          checkUserType(response.data.user.UserType, creator, accountEmail);
+        setCurrentUser({
+          email: response.data.user._id,
+          fname: response.data.user.Fname,
+          fname: response.data.user.Sname,
+        });
+        const user = response.data.user._id;
+
+        const membersArr = [];
+        members.forEach((member) => {
+          membersArr.push(member.email);
+        });
+
+        if (membersArr.includes(user) || creator.email === user) {
+          checkUserType(response.data.user.UserType, creator, user);
         } else {
           navigate("/group/" + groupId);
         }
@@ -329,7 +340,7 @@ function Content() {
   };
 
   const checkUserType = async (usertype, creator, email) => {
-    if (usertype === "Teacher" && creator === email) {
+    if (usertype === "Teacher" && creator.email === email) {
       setView({
         ...view,
         teacher: true,
@@ -414,6 +425,7 @@ function Content() {
                 </IconButton>
               </Grid>
             )}
+
             {view.teacher && (
               <Grid item lg={1} md={1} xs={1} id="btnSection">
                 {contentDisplay.main && (
@@ -492,7 +504,7 @@ function Content() {
                         <ListItem
                           style={{
                             backgroundColor:
-                              selectedContent.title === item.title
+                              selectedContent._id === item._id
                                 ? "#bdbebf"
                                 : "#edeff2",
                             cursor: "pointer",
@@ -533,16 +545,16 @@ function Content() {
             )}
 
             {contentDisplay.showSelectedFile && (
-              <Grid lg={12} item container>
+              <Grid container lg={12} >
+                <Grid item lg={12} >
+                  <h3>{selectedFile.originalname}</h3>
+                </Grid>
                 <Breadcrumbs
                   separator={<NavigateNextIcon fontSize="small" />}
                   aria-label="breadcrumb"
                 >
                   {breadcrumbs}
                 </Breadcrumbs>
-                <Grid lg={12} item container>
-                  <h3>{selectedFile.originalname}</h3>
-                </Grid>
                 <DocViewer
                   documents={docs}
                   pluginRenderers={DocViewerRenderers}
@@ -559,38 +571,54 @@ function Content() {
 
             {contentDisplay.uploadForm && (
               <Grid item lg={12} md={12} xs={12}>
-                <TextField
-                  id="outlined-basic"
-                  label="Content Title"
-                  variant="outlined"
-                  className="form"
-                  onChange={(e) => setContentTitle(e.target.value)}
-                />
-                <Form.Label>Select files to be uploaded </Form.Label>
-                <Form.Control
-                  type="file"
-                  multiple
-                  ref={fileSelect}
-                  onChange={saveFile}
-                />
-                <Button variant="outlined" onClick={uploadContent}>
-                  Upload
-                </Button>
-                <Button variant="outlined" onClick={closeForm}>
-                  Cancel
-                </Button>
+                <Grid item lg={12} md={12} xs={12}>
+                  <h3 id="header">Upload Content</h3>
+                </Grid>
+                <Grid item lg={12} md={12} xs={12} id="edititemText">
+                  <TextField
+                    id="outlined-basic"
+                    label="Content Title"
+                    variant="outlined"
+                    className="form"
+                    onChange={(e) => setContentTitle(e.target.value)}
+                  />
+                </Grid>
+                <Grid item lg={12} md={12} xs={12} id="edititem">
+                  <Form.Label>Select files to be uploaded: </Form.Label>
+                </Grid>
+                <Grid item lg={12} md={12} xs={12}>
+                  <Form.Control
+                    type="file"
+                    multiple
+                    ref={fileSelect}
+                    onChange={saveFile}
+                    id="edititemText"
+                  />
+                </Grid>
+                <Grid item lg={12} md={12} xs={12}>
+                  <Button
+                    variant="outlined"
+                    onClick={uploadContent}
+                    id="edititem"
+                  >
+                    Upload
+                  </Button>
+                  <Button variant="outlined" onClick={closeForm} id="edititem">
+                    Cancel
+                  </Button>
+                </Grid>
               </Grid>
             )}
 
             {contentDisplay.loading && (
-              <Grid>
+              <Grid item lg={12} md={12} xs={12}>
                 <p>Uploading content..</p>
                 <Spinner></Spinner>
               </Grid>
             )}
 
             {contentDisplay.success && (
-              <Grid>
+              <Grid item lg={12} md={12} xs={12}>
                 <Alert severity="success">
                   Content successfully uploaded.{" "}
                   <Button onClick={handleOk}>Ok</Button>
