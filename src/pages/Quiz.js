@@ -60,7 +60,7 @@ function Quiz() {
     loading: false,
     mcqEdit: false,
     mcqCreate: false,
-    textBtns: false
+    textBtns: false,
   });
 
   const [currentQuestion, setCurrentQuestion] = useState(1);
@@ -81,6 +81,25 @@ function Quiz() {
   const [editQuestion, setEditQuestion] = useState();
   const [answerInput, setAnswerInput] = useState(["a", "b", "c", "d"]);
   const [deleteQuiz, setDeleteQuiz] = useState();
+  const [answerValA, setAnswerValA] = useState({
+    answer: "",
+    correct: false,
+  });
+  const [answerValB, setAnswerValB] = useState({
+    answer: "",
+    correct: false,
+  });
+  const [answerValC, setAnswerValC] = useState({
+    answer: "",
+    correct: false,
+  });
+  const [answerValD, setAnswerValD] = useState({
+    answer: "",
+    correct: false,
+  });
+  const [answerB, setAnswerB] = useState("");
+  const [answerC, setAnswerC] = useState("");
+  const [answerD, setAnswerD] = useState("");
 
   const quizOptions = [
     {
@@ -113,7 +132,6 @@ function Quiz() {
     };
     Axios.post("http://localhost:3001/getQuiz", data).then((res) => {
       if (res.data.length === 0) {
-        console.log("test");
         setNoQuiz(true);
       }
       checkCompletionStatus(res.data, userEmail);
@@ -191,9 +209,29 @@ function Quiz() {
       { id: "c", correct: false },
       { id: "d", correct: false },
     ]);
+    setAnswerValA({
+      ...answerValA,
+      answer: "",
+      correct: false,
+    });
+    setAnswerValB({
+      ...answerValA,
+      answer: "",
+      correct: false,
+    });
+    setAnswerValC({
+      ...answerValA,
+      answer: "",
+      correct: false,
+    });
+    setAnswerValD({
+      ...answerValA,
+      answer: "",
+      correct: false,
+    });
     setQuestionsArray([1]);
     setQuizToCreate([]);
-    setCurrentQuestion(1)
+    setCurrentQuestion(1);
   };
 
   const checkUser = (members, creator) => {
@@ -252,7 +290,7 @@ function Quiz() {
         ...createForm,
         first: false,
         text: true,
-        textBtns: true
+        textBtns: true,
       });
     } else {
       console.error("Error");
@@ -273,22 +311,38 @@ function Quiz() {
         mcqCreate: true,
       });
     }
-    if (quizType === "MCQ") {
+    if (quizType === "Text") {
       setCreateForm({
         ...createForm,
         edit: false,
-        mcqCreate: true,
+        text: true,
       });
     }
     setEditQuestion();
     const num = questionsArray.length;
     setQuestionsArray([...questionsArray, parseInt(num) + 1]);
-    saveQuestion(currentQuestion);
-
-    const hideId = "#" + currentQuestion;
-    $(hideId).hide();
-    //console.log(hideId);
     setCurrentQuestion(parseInt(num) + 1);
+    setQuestion("");
+    setAnswerValA({
+      ...answerValA,
+      answer: "",
+      correct: false,
+    });
+    setAnswerValB({
+      ...answerValB,
+      answer: "",
+      correct: false,
+    });
+    setAnswerValC({
+      ...answerValC,
+      answer: "",
+      correct: false,
+    });
+    setAnswerValD({
+      ...answerValD,
+      answer: "",
+      correct: false,
+    });
   };
 
   const handleQuestionChange = (e) => {
@@ -296,18 +350,95 @@ function Quiz() {
       setQuestion(e.target.value);
     } else if (e.target.id === "answer") {
       const answerOption = e.target.name;
+      const answerVal = e.target.value;
       const answerToSet = answers.find((a) => a.id === answerOption);
-      answerToSet.answer = e.target.value;
+      answerToSet.answer = answerVal;
       answerToSet.selected = false;
+
+      if (answerOption === "a") {
+        setAnswerValA({
+          ...answerValA,
+          answer: answerVal,
+        });
+      }
+      if (answerOption === "b") {
+        setAnswerValB({
+          ...answerValB,
+          answer: answerVal,
+        });
+      }
+      if (answerOption === "c") {
+        setAnswerValC({
+          ...answerValC,
+          answer: answerVal,
+        });
+      }
+      if (answerOption === "d") {
+        setAnswerValD({
+          ...answerValD,
+          answer: answerVal,
+        });
+      }
     } else if (e.target.id === "correctCheck") {
       const answerOption = e.target.name;
       const answerToSet = answers.find((a) => a.id === answerOption);
-      answerToSet.correct = true;
+      if (answerToSet.correct === false) {
+        answerToSet.correct = true;
+        if (answerOption === "a") {
+          setAnswerValA({
+            ...answerValA,
+            correct: true,
+          });
+        }
+        if (answerOption === "b") {
+          setAnswerValB({
+            ...answerValB,
+            correct: true,
+          });
+        }
+        if (answerOption === "c") {
+          setAnswerValC({
+            ...answerValC,
+            correct: true,
+          });
+        }
+        if (answerOption === "d") {
+          setAnswerValD({
+            ...answerValD,
+            correct: true,
+          });
+        }
+      } else if(answerToSet.correct === true){
+        answerToSet.correct = false;
+        if (answerOption === "a") {
+          setAnswerValA({
+            ...answerValA,
+            correct: false,
+          });
+        }
+        if (answerOption === "b") {
+          setAnswerValB({
+            ...answerValB,
+            correct: false,
+          });
+        }
+        if (answerOption === "c") {
+          setAnswerValC({
+            ...answerValC,
+            correct: false,
+          });
+        }
+        if (answerOption === "d") {
+          setAnswerValD({
+            ...answerValD,
+            correct: false,
+          });
+        }
+      }
     }
   };
 
   const handleEditQuestion = (e) => {
-    saveQuestion(currentQuestion);
     const id = parseInt(e.currentTarget.id);
     setCurrentQuestion(id);
     if (quizType === "MCQ") {
@@ -359,6 +490,11 @@ function Quiz() {
     if (setMcqQuestion != undefined) {
       setMcqQuestion.question = question;
       setMcqQuestion.answers = answers;
+      setCreateForm({
+        ...createForm,
+        mcqCreate: false,
+        text: false
+      })
       resetQAstates();
     } else {
       setQuizToCreate([
@@ -369,9 +505,15 @@ function Quiz() {
           answers: answers,
         },
       ]);
+      setCreateForm({
+        ...createForm,
+        mcqCreate: false,
+        text: false
+      })
       resetQAstates();
     }
   };
+
 
   const saveEdit = () => {
     const setQuestion = quizToCreate.find((q) => q.id === editQuestion.id);
@@ -404,6 +546,27 @@ function Quiz() {
       { id: "c", correct: false },
       { id: "d", correct: false },
     ]);
+    setQuestion("");
+    setAnswerValA({
+      ...answerValA,
+      answer: "",
+      correct: false,
+    });
+    setAnswerValB({
+      ...answerValB,
+      answer: "",
+      correct: false,
+    });
+    setAnswerValC({
+      ...answerValC,
+      answer: "",
+      correct: false,
+    });
+    setAnswerValD({
+      ...answerValD,
+      answer: "",
+      correct: false,
+    });
   };
 
   const removeAnswer = (e) => {
@@ -520,9 +683,9 @@ function Quiz() {
   }, []);
 
   const test = () => {
-    console.log(questionsArray)
-    console.log(currentQuestion)
-  }
+    console.log(questionsArray);
+    console.log(quizToCreate);
+  };
 
   return (
     <Grid>
@@ -791,149 +954,161 @@ function Quiz() {
 
             {createForm.text && (
               <Grid lg={12} md={12} xs={12} className="questionForm">
-                {questionsArray.map((question) => (
-                  <form id={question} className="questionForm">
-                    <Grid lg={12} md={12} xs={12}>
-                      <p>Question {question}</p>
-                    </Grid>
-                    <Grid lg={12} md={12} xs={12}>
-                      <Button onClick={addQuestion}>
-                        <AddIcon />
-                      </Button>
-                      <Button>
-                        <SettingsIcon />
-                      </Button>
-                    </Grid>
-                    <Grid lg={12} md={12} xs={12} id="textBox">
-                      <TextField
-                        sx={{
-                          width: { sm: 300, md: 800 },
-                        }}
-                        id="questionText"
-                        label="Question"
-                        variant="outlined"
-                        onChange={handleQuestionChange}
-                      />
-                    </Grid>
-                  </form>
-                ))}
+                {/* {questionsArray.map((question) => ( */}
+                <form id={currentQuestion} className="questionForm">
+                  <Grid lg={12} md={12} xs={12}>
+                    <p>Question {currentQuestion}</p>
+                  </Grid>
+                  <Grid lg={12} md={12} xs={12}>
+                    <Button onClick={addQuestion}>
+                      <AddIcon />
+                    </Button>
+                    <Button>
+                      <SettingsIcon />
+                    </Button>
+                  </Grid>
+                  <Grid lg={12} md={12} xs={12} id="textBox">
+                    <TextField
+                      sx={{
+                        width: { sm: 300, md: 800 },
+                      }}
+                      id="questionText"
+                      label="Question"
+                      variant="outlined"
+                      value={question}
+                      onChange={handleQuestionChange}
+                    />
+                  </Grid>
+                  <Button variant='outlined' onClick={() => saveQuestion(currentQuestion)}>Save Question</Button>
+                </form>
+                {/* ))} */}
               </Grid>
             )}
 
             {createForm.mcqCreate && (
               <Grid lg={12} md={12} xs={12} className="questionForm">
-                {questionsArray.map((question) => (
-                  <form id={question} className="questionForm">
-                    <Grid lg={12} md={12} xs={12}>
-                      <p id="qNum">Question {question}</p>
-                    </Grid>
-                    <Grid lg={12} md={12} xs={12}>
-                      {/* <IconButton onClick={addQuestion}>
+                {/* {questionsArray.map((question) => ( */}
+                <form id={currentQuestion} className="questionForm">
+                  <Grid lg={12} md={12} xs={12}>
+                    <p id="qNum">Question {currentQuestion}</p>
+                  </Grid>
+                  <Grid lg={12} md={12} xs={12}>
+                    {/* <IconButton onClick={addQuestion}>
                         <AddIcon />
                       </IconButton> */}
-                    </Grid>
+                  </Grid>
+                  <Grid lg={12} md={12} xs={12} id="questionForm">
+                    <TextField
+                      sx={{
+                        width: { sm: 300, md: 800 },
+                      }}
+                      id="questionText"
+                      label="Question"
+                      variant="outlined"
+                      onChange={handleQuestionChange}
+                      value={question}
+                    />
+                  </Grid>
+                  {answerInput.includes("a") && (
                     <Grid lg={12} md={12} xs={12} id="questionForm">
+                      <Checkbox
+                        id="correctCheck"
+                        name="a"
+                        onChange={handleQuestionChange}
+                        checked={answerValA.correct}
+                      ></Checkbox>
                       <TextField
                         sx={{
-                          width: { sm: 300, md: 800 },
+                          width: { sm: 300, md: 600 },
                         }}
-                        id="questionText"
-                        label="Question"
+                        id="answer"
+                        label="Answer"
                         variant="outlined"
+                        name="a"
+                        value={answerValA.answer}
                         onChange={handleQuestionChange}
-                        
                       />
+                      <IconButton id="a" onClick={removeAnswer}>
+                        <Delete id="a" />
+                      </IconButton>
                     </Grid>
-                    {answerInput.includes("a") && (
-                      <Grid lg={12} md={12} xs={12} id="questionForm">
-                        <Checkbox
-                          id="correctCheck"
-                          name="a"
-                          onChange={handleQuestionChange}
-                        ></Checkbox>
-                        <TextField
-                          sx={{
-                            width: { sm: 300, md: 600 },
-                          }}
-                          id="answer"
-                          label="Answer"
-                          variant="outlined"
-                          name="a"
-                          onChange={handleQuestionChange}
-                        />
-                        <IconButton id="a" onClick={removeAnswer}>
-                          <Delete id="a" />
-                        </IconButton>
-                      </Grid>
-                    )}
-                    {answerInput.includes("b") && (
-                      <Grid lg={12} md={12} xs={12} id="questionForm">
-                        <Checkbox
-                          id="correctCheck"
-                          name="b"
-                          onChange={handleQuestionChange}
-                        ></Checkbox>
-                        <TextField
-                          sx={{
-                            width: { sm: 300, md: 600 },
-                          }}
-                          id="answer"
-                          label="Answer"
-                          variant="outlined"
-                          name="b"
-                          onChange={handleQuestionChange}
-                        />
-                        <IconButton id="b" onClick={removeAnswer}>
-                          <Delete id="b" />
-                        </IconButton>
-                      </Grid>
-                    )}
-                    {answerInput.includes("c") && (
-                      <Grid lg={12} md={12} xs={12} id="questionForm">
-                        <Checkbox
-                          id="correctCheck"
-                          name="c"
-                          onChange={handleQuestionChange}
-                        ></Checkbox>
-                        <TextField
-                          sx={{
-                            width: { sm: 300, md: 600 },
-                          }}
-                          id="answer"
-                          label="Answer"
-                          variant="outlined"
-                          name="c"
-                          onChange={handleQuestionChange}
-                        />
-                        <IconButton id="c" onClick={removeAnswer}>
-                          <Delete id="c" />
-                        </IconButton>
-                      </Grid>
-                    )}
-                    {answerInput.includes("d") && (
-                      <Grid lg={12} md={12} xs={12} id="questionForm">
-                        <Checkbox
-                          id="correctCheck"
-                          name="d"
-                          onChange={handleQuestionChange}
-                        ></Checkbox>
-                        <TextField
-                          sx={{
-                            width: { sm: 300, md: 600 },
-                          }}
-                          id="answer"
-                          label="Answer"
-                          variant="outlined"
-                          name="d"
-                          onChange={handleQuestionChange}
-                        />
-                        <IconButton id="d" onClick={removeAnswer}>
-                          <Delete id="d" />
-                        </IconButton>
-                      </Grid>
-                    )}
-                  </form>
-                ))}
+                  )}
+                  {answerInput.includes("b") && (
+                    <Grid lg={12} md={12} xs={12} id="questionForm">
+                      <Checkbox
+                        id="correctCheck"
+                        name="b"
+                        checked={answerValB.correct}
+                        onChange={handleQuestionChange}
+                      ></Checkbox>
+                      <TextField
+                        sx={{
+                          width: { sm: 300, md: 600 },
+                        }}
+                        id="answer"
+                        label="Answer"
+                        variant="outlined"
+                        name="b"
+                        value={answerValB.answer}
+                        onChange={handleQuestionChange}
+                      />
+                      <IconButton id="b" onClick={removeAnswer}>
+                        <Delete id="b" />
+                      </IconButton>
+                    </Grid>
+                  )}
+                  {answerInput.includes("c") && (
+                    <Grid lg={12} md={12} xs={12} id="questionForm">
+                      <Checkbox
+                        id="correctCheck"
+                        name="c"
+                        defaultValue={false}
+                        checked={answerValC.correct}
+                        onChange={handleQuestionChange}
+                      ></Checkbox>
+                      <TextField
+                        sx={{
+                          width: { sm: 300, md: 600 },
+                        }}
+                        id="answer"
+                        label="Answer"
+                        variant="outlined"
+                        name="c"
+                        value={answerValC.answer}
+                        onChange={handleQuestionChange}
+                      />
+                      <IconButton id="c" onClick={removeAnswer}>
+                        <Delete id="c" />
+                      </IconButton>
+                    </Grid>
+                  )}
+                  {answerInput.includes("d") && (
+                    <Grid lg={12} md={12} xs={12} id="questionForm">
+                      <Checkbox
+                        id="correctCheck"
+                        name="d"
+                        checked={answerValD.correct}
+                        onChange={handleQuestionChange}
+                      ></Checkbox>
+                      <TextField
+                        sx={{
+                          width: { sm: 300, md: 600 },
+                        }}
+                        id="answer"
+                        label="Answer"
+                        variant="outlined"
+                        name="d"
+                        value={answerValD.answer}
+                        onChange={handleQuestionChange}
+                      />
+                      <IconButton id="d" onClick={removeAnswer}>
+                        <Delete id="d" />
+                      </IconButton>
+                    </Grid>
+                  )}
+                  <Button variant='outlined' onClick={() => saveQuestion(currentQuestion)}>Save Question</Button>
+                </form>
+                {/* ))} */}
               </Grid>
             )}
             {createForm.mcq && (
