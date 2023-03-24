@@ -23,6 +23,7 @@ import {
   TableBody,
   IconButton,
   Snackbar,
+  Alert,
 } from "@mui/material";
 import Refresh from "../components/Refresh";
 import {
@@ -63,6 +64,7 @@ function SelectedGroup() {
 
   const [nameErrorMessage, setNameErrorMessage] = useState("");
   const [passErrorMessage, setPassErrorMessage] = useState("");
+  const [showError, setShowError] = useState(false);
 
   const [membersView, setMembersView] = useState(false);
   const [publicView, setPublicView] = useState(false);
@@ -288,7 +290,8 @@ function SelectedGroup() {
     setPublicView(false);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = (e) => {
+    e.preventDefault();
     const data = {
       user: currentUser,
       group: selectedGroup,
@@ -298,7 +301,11 @@ function SelectedGroup() {
 
     Axios.post("http://localhost:3001/joinGroup", data)
       .then(function (res) {
-        console.log(res);
+        if (res.data.message) {
+          setPassErrorMessage(res.data.message);
+          setShowError(true);
+        }
+        Refresh();
       })
       .catch((e) => console.log(e));
   };
@@ -311,7 +318,7 @@ function SelectedGroup() {
   const handleDelete = () => {
     const data = {
       ID: groupInfo._id,
-      Pass: confirmDelete,
+      Pass: deletePass,
     };
     setInfoVisible(false);
     setLoading(true);
@@ -319,8 +326,8 @@ function SelectedGroup() {
       Axios.post("http://localhost:3001/deleteGroup", data)
         .then((res) => console.log(res))
         .then((result) => navigate("/Home"))
-        .catch((e) => console.log(e))},
-        3000);
+        .catch((e) => console.log(e));
+    }, 3000);
   };
 
   const cancelJoin = () => {
@@ -694,44 +701,46 @@ function SelectedGroup() {
 
       {publicView && (
         <div>
-          <Fab aria-label="back" onClick={handlePublicBack}>
-            <ArrowBackIosIcon />
-          </Fab>
-          <Card>
+          <Card id="groupCard">
             <h5>Group Description</h5>
             <hr />
-            <p>group description</p>
+            <p>{groupInfo.description}</p>
+            <p>Group creator:</p>{" "}
+            <p>
+              {groupInfo.creator.fname} {groupInfo.creator.sname}
+            </p>
             <Button variant="outlined" onClick={showJoinForm}>
               Join Group
             </Button>
-          </Card>
-
-          <Card>
-            <h5>Group Info</h5>
-            <hr />
-            <p>Start Date</p>
-            <p>End Date</p>
-            <p>Teacher</p>
           </Card>
         </div>
       )}
 
       {joinForm && (
         <div>
-          <form onSubmit={handleSubmit}>
-            <TextField
-              id="outlined-password-input"
-              label="Group Password"
-              type="password"
-              onChange={(e) => setGroupPass(e.target.value)}
-            />
-            <Button variant="outlined" type="submit">
-              Join Group
-            </Button>
-          </form>
-          <Button variant="outlined" onClick={cancelJoin}>
-            Cancel
-          </Button>
+          <Card id="groupCard">
+            <h5>Join {groupName}</h5>
+            <hr />
+            <form onSubmit={handleSubmit}>
+              <Grid item lg={12} md={12} xs={12} id="joinForm">
+                <TextField
+                  id="outlined-password-input"
+                  label="Group Password"
+                  type="password"
+                  onChange={(e) => setGroupPass(e.target.value)}
+                />
+              </Grid>
+              <Grid item lg={12} md={12} xs={12}>
+                <Button variant="outlined" type="submit" id="joinForm">
+                  Join Group
+                </Button>
+                <Button variant="outlined" onClick={cancelJoin} id="joinForm">
+                  Cancel
+                </Button>
+              </Grid>
+            </form>
+            {showError && <Alert severity="error">{passErrorMessage}</Alert>}
+          </Card>
         </div>
       )}
 
@@ -748,6 +757,12 @@ function SelectedGroup() {
           <Fab aria-label="back" onClick={handleBack} id="btn">
             <HomeIcon />
           </Fab>
+
+          {publicView && (
+            <Fab aria-label="back" onClick={handlePublicBack} id="btn">
+              <ArrowBackIosIcon />
+            </Fab>
+          )}
 
           {creatorSettings && (
             <Fab aria-label="groupSettings" onClick={clickSettings} id="btn">

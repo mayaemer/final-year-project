@@ -3,8 +3,6 @@ import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import {
   List,
   ListItem,
-  Accordion,
-  AccordionSummary,
   Paper,
   InputBase,
   IconButton,
@@ -13,17 +11,22 @@ import {
   ListItemText,
   Grid,
   SwipeableDrawer,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import Send from "@mui/icons-material/Send";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import Axios from "axios";
 import "../styles/Messages.css";
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
+import ArrowCircleDownIcon from "@mui/icons-material/ArrowCircleDown";
 import ChatBubble from "./ChatBubble";
+import { messageSchema } from "../Validations/Validation";
 
 function MessageButton(props) {
   const [open, setOpen] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(false);
   const [display, setDisplay] = useState({
     messages: true,
     search: false,
@@ -39,12 +42,10 @@ function MessageButton(props) {
   const [chatData, setChatData] = useState([]);
   const [currentChat, setCurrentChat] = useState();
   const [previousChats, setPreviousChats] = useState([]);
+  const [snackError, setSnackError] = useState("");
 
+  const listRef = useRef(null);
   const scrollEnd = useRef(null);
-
-  const scrollToEnd = () => {
-    scrollEnd.current?.scrollIntoView();
-  };
 
   const openDrawer = () => {
     setOpen(true);
@@ -56,9 +57,14 @@ function MessageButton(props) {
     setOpen(false);
   };
 
+  const closeError = () => {
+    setSnackError("Profanity detected. Message cannot be sent.");
+    setErrorMsg(false);
+  };
+
   const openSelected = (e) => {
     const email = e.target.id;
-    const filteredUser = searchResults.filter(
+    const filteredUser = usersContacts.filter(
       (contact) => contact.email === email
     );
     setSelectedUser(filteredUser);
@@ -66,7 +72,6 @@ function MessageButton(props) {
     const participants = [...filteredUser];
     participants.push(currentUser);
 
-    //console.log(chatData)
     if (chatData.length === 0) {
       createChat(participants);
     } else {
@@ -88,6 +93,7 @@ function MessageButton(props) {
                 search: false,
                 selectedUser: true,
                 showPrevMessages: true,
+                messages: false,
               });
             } else if (chatData[i].messages.length === 0) {
               setDisplay({
@@ -95,6 +101,7 @@ function MessageButton(props) {
                 search: false,
                 selectedUser: true,
                 noPrevMessages: true,
+                messages: false,
               });
             }
           }
@@ -127,39 +134,55 @@ function MessageButton(props) {
 
     Axios.post("http://localhost:3001/createChat", data)
       .then((res) => {
-        console.log(res);
-        setCurrentChat(res.data);
+        console.log(res.data);
+        getCurrentChat(res.data.insertedId);
         getUsersChats(currentUser.email);
       })
       .catch((e) => console.error(e));
   };
 
-  const closeSelected = () => {
-    setDisplay({
-      ...display,
-      search: true,
-      selectedUser: false,
-    });
-  };
-
-  const sendMessage = () => {
+  const getCurrentChat = (chatId) => {
     const data = {
-      sender: currentUser,
-      receiver: selectedUser,
-      message: message,
-      chat: currentChat._id,
+      chatid: chatId,
     };
 
+    Axios.post("http://localhost:3001/getChat", data)
+      .then((res) => {
+        console.log(res);
+        setCurrentChat(res.data);
+      })
+      .catch((e) => console.error(e));
+  };
+
+  const closeSelected = () => {
+    if (searchResults.length === 0) {
+      setDisplay({
+        ...display,
+        messages: true,
+        search: false,
+        selectedUser: false,
+      });
+    } else if (searchResults.length > 0) {
+      setDisplay({
+        ...display,
+        search: true,
+        selectedUser: false,
+      });
+    }
+  };
+
+  const sendMessage = (data) => {
+    console.log(data);
     Axios.post("http://localhost:3001/sendMessage", data)
       .then((res) => {
         console.log(res);
-        getUpdatedChat(currentChat._id);
         setMessage("");
-        scrollToEnd();
         setDisplay({
           ...display,
           noPrevMessages: false,
+          showPrevMessages: true,
         });
+        getUpdatedChat(currentChat._id);
       })
       .catch((e) => console.error(e));
   };
@@ -173,30 +196,77 @@ function MessageButton(props) {
       .then((res) => {
         console.log(res);
         setCurrentChat(res.data);
+        scrollChat();
       })
       .catch((e) => console.error(e));
+  };
+
+  const checkProfanity = async () => {
+    const data = {
+      sender: currentUser,
+      receiver: selectedUser,
+      textBody: message,
+      chat: currentChat._id,
+    };
+
+    const validate = await messageSchema.isValid(data);
+    console.log(validate)
+
+    if (validate === true) {
+      Axios.post("http://localhost:3001/checkProfanity", data)
+        .then((result) => {
+          console.log(data);
+          if (result.data.includes(1)) {
+            //console.log(result);
+
+            handleProfanity();
+          } else {
+            console.log(result);
+            // postQuestion();
+            sendMessage(data);
+          }
+        })
+        .catch((e) => console.log(e));
+    } else {
+      setSnackError("Cannot send empty message.");
+      setErrorMsg(true);
+      setMessage("");
+    }
+  };
+
+  const handleProfanity = () => {
+    setErrorMsg(true);
+    setMessage("");
   };
 
   const getUsersContacts = () => {
     const userContactsArr = [];
     props.groups.forEach((group) => {
-      if (
-        userContactsArr.includes(group.creator) === false &&
-        group.creator.email != currentUser.email
-      ) {
+      const checkCreator = userContactsArr.some(
+        (item) => item.email === group.creator.email
+      );
+      if (checkCreator === false && currentUser.email != group.creator.email) {
         userContactsArr.push(group.creator);
-        //console.log(group.creator)
       }
-      group.members.forEach((member) => {
-        if (
-          userContactsArr.includes(member) === false &&
-          member.email != currentUser.email
-        ) {
-          userContactsArr.push(member);
+
+      for (let i = 0; i < group.members.length; i++) {
+        const userData = {
+          email: group.members[i].email,
+          fname: group.members[i].fname,
+          sname: group.members[i].sname,
+        };
+
+        const checkArr = userContactsArr.some(
+          (item) => item.email === userData.email
+        );
+
+        if (checkArr === false && currentUser.email != userData.email) {
+          userContactsArr.push(userData);
         }
-      });
-      setUsersContacts(userContactsArr);
+      }
     });
+    console.log(userContactsArr);
+    setUsersContacts(userContactsArr);
   };
 
   const handleSearch = (searchItem) => {
@@ -259,12 +329,11 @@ function MessageButton(props) {
       .catch((e) => console.error(e));
   };
 
-  useEffect(() => {
-    // Scroll to the bottom of the list on initial render
+  const scrollChat = () => {
     if (scrollEnd.current) {
-      scrollEnd.current.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'nearest' });
+      scrollEnd.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, []);
+  };
 
   useEffect(() => {
     let unmounted = false;
@@ -320,22 +389,22 @@ function MessageButton(props) {
           </List>
         )}
         {display.selectedUser && (
-          <List style={{ height: "100%", overflowY: "auto" }}>
-            <ListItem>
+          <List ref={listRef} style={{ height: "800px", overflowY: "scroll" }}>
+            <ListItem className="chatHead">
               <IconButton onClick={closeSelected}>
                 <ArrowBackIosIcon></ArrowBackIosIcon>
               </IconButton>
             </ListItem>
             {selectedUser.map((user) => (
               <ListItem>
-                <ListItemText>
+                <ListItemText className="chatHead" id="chatName">
                   {user.fname} {user.sname}
                 </ListItemText>
               </ListItem>
             ))}
             <List id="chatBody">
               {display.noPrevMessages && (
-                <Grid container direction="column">
+                <Grid item lg={12} md={12} xs={12} id='text'>
                   <p>No previous messages</p>
                 </Grid>
               )}
@@ -349,10 +418,15 @@ function MessageButton(props) {
                       date={message.date}
                     />
                   ))}
-                  <div id="dummy" ref={scrollEnd}>test test test</div>
+                  <div id="dummy" ref={scrollEnd}>
+                    This is a dummy div
+                  </div>
                 </Grid>
               )}
             </List>
+            <IconButton onClick={scrollChat}>
+              <ArrowCircleDownIcon />
+            </IconButton>
             <ListItem id="sendMessage">
               <TextField
                 fullWidth
@@ -365,7 +439,7 @@ function MessageButton(props) {
                   setMessage(e.target.value);
                 }}
               />
-              <IconButton onClick={sendMessage}>
+              <IconButton onClick={checkProfanity}>
                 <Send />
               </IconButton>
             </ListItem>
@@ -374,12 +448,18 @@ function MessageButton(props) {
         {display.messages && (
           <List>
             {previousChats.map((chat) => (
-              <ListItemButton>
+              <ListItemButton id={chat.email} onClick={openSelected}>
                 {chat.fname} {chat.sname}
               </ListItemButton>
             ))}
           </List>
         )}
+
+        <Snackbar open={errorMsg} autoHideDuration={6000} onClose={closeError}>
+          <Alert severity="error" sx={{ width: "100%" }} onClose={closeError}>
+            {snackError}
+          </Alert>
+        </Snackbar>
       </SwipeableDrawer>
     </div>
   );

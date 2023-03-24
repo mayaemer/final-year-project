@@ -1,5 +1,5 @@
 import sys
-from profanity_check import predict, predict_prob
+from profanity_check import predict
 
 def predictProfanity() :
     print(predict([sys.argv[1]]))
@@ -9,4 +9,5 @@ def predictProfanity() :
 
 if __name__ =='__main__' :
     predictProfanity = predictProfanity()
+
 

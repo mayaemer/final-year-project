@@ -7,18 +7,17 @@ import { useEffect, useState } from "react";
 import Axios from "axios";
 import Card from "@mui/material/Card";
 import { Link } from "react-router-dom";
-import Pagination from "@mui/material/Pagination";
-import PaginationItem from "@mui/material/PaginationItem";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import MessageButton from "../components/MessageButton";
 import { useNavigate } from "react-router-dom";
 import Grid from "@mui/material/Grid";
-import "../styles/Groups.css";
+import "../styles/Discover.css";
 
 function Discover() {
   const navigate = useNavigate();
 
   const [groupData, setGroupData] = useState([]);
+  const [groupList, setGroupList] = useState([]);
+  const [currentUser, setCurrentUser] = useState();
 
   Axios.defaults.withCredentials = true;
 
@@ -26,6 +25,21 @@ function Discover() {
     Axios.get("http://localhost:3001/check").then((response) => {
       if (response.data.loggedIn === true) {
         console.log(response);
+        setCurrentUser({
+          email: response.data.user._id,
+          fname: response.data.user.Fname,
+          sname: response.data.user.Sname,
+        });
+        checkGroups(response.data.user._id, response.data.user.UserType);
+      }
+    });
+  };
+
+  const checkGroups = (email, usertype) => {
+    const data = { Email: email, Usertype: usertype };
+    Axios.post("http://localhost:3001/checkGroup", data).then((res) => {
+      {
+        setGroupList(res.data);
       }
     });
   };
@@ -34,7 +48,7 @@ function Discover() {
     await Axios.get("http://localhost:3001/getGroups")
       .then((res) => {
         setGroupData(res.data);
-        console.log(res.data);
+        console.log(res);
       })
       .catch((e) => console.log(e));
   };
@@ -85,10 +99,19 @@ function Discover() {
     <div>
       <NavBar></NavBar>
       <Grid lg={12} item container>
-        <Grid item lg={12} md={12} xs={12}>
-          <h2 id='head'>Discover</h2>
+        <Grid item lg={10} md={10} xs={10}></Grid>
+
+        <Grid item lg={2} md={2} xs={2} id="messageBtn">
+          <MessageButton
+            currentUser={currentUser}
+            groups={groupList}
+            id="messageBtn"
+          />
         </Grid>
-        <Grid item lg={12} md={12} xs={12} >
+        <Grid item lg={12} md={12} xs={12} id='discoverHead'>
+          <h2>Discover</h2>
+        </Grid>
+        <Grid item lg={12} md={12} xs={12} id='discoverHead'>
           <Paper
             sx={{
               p: "2px 4px",
@@ -107,7 +130,7 @@ function Discover() {
           </Paper>
         </Grid>
         <Grid item lg={12} md={12} xs={12}>
-          <Card id="groupsCard">
+          <Card id="groupsCard" className='discover'>
             <Grid lg={12} item container spacing={2} id="testgrid">
               {groupData.map((groups) => (
                 <Grid item lg={3} md={3} xs={6}>
@@ -122,7 +145,6 @@ function Discover() {
             </Grid>
           </Card>
         </Grid>
-
       </Grid>
     </div>
   );

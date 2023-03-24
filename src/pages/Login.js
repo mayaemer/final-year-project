@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Card from "@mui/material/Card";
-import { TextField } from "@mui/material";
+import { Alert, Button, Grid, TextField } from "@mui/material";
 import { loginSchema } from "../Validations/Validation";
 import Axios from "axios";
 import { useNavigate } from "react-router";
@@ -9,7 +9,6 @@ import Refresh from "../components/Refresh";
 
 // this page is empty at this point
 function Login() {
-
   // navigation
   const navigate = useNavigate();
 
@@ -18,6 +17,7 @@ function Login() {
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [alert, setAlert] = useState("");
+  const [error, setError] = useState(false);
 
   Axios.defaults.withCredentials = true;
 
@@ -37,64 +37,76 @@ function Login() {
 
   // post login data to server to validate it against database records
   // if successful add token to local storage
-  const handleSubmit = async(e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const loginData = {
       Email: email,
-      Pass: password
+      Pass: password,
     };
-  
-  const validate = await loginSchema.isValid(loginData)
 
-  if(validate === true){
-    setErrorMessage('');
-    try{
-    Axios.post("http://localhost:3001/login", loginData).then(function (res) {
-      if (!res.data.auth) {
-        setAlert(res.data.message);
-      } else {
-        localStorage.setItem("token", res.data.token);
-        Refresh();
-      }    });}
-    catch(e){
-      console.error(e);
+    const validate = await loginSchema.isValid(loginData);
+
+    if (validate === true) {
+      setErrorMessage("");
+      try {
+        Axios.post("http://localhost:3001/login", loginData).then(function (
+          res
+        ) {
+          if (!res.data.auth) {
+            setErrorMessage(res.data.message);
+          } else {
+            localStorage.setItem("token", res.data.token);
+            Refresh();
+          }
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    } else {
+      setErrorMessage("Data not valid");
+      setError(true)
     }
-  }
-  else {
-    setErrorMessage('Data not valid');
-  }
   };
 
   return (
-    <div>
-      <div id="card">
-        <Card variant="outlined">
+    <Grid container spacing={2}>
+      <Grid item lg={12} md={12} xs={12}>
+        <Card id="groupCard">
+          <h4>Log in</h4>
           <form onSubmit={(e) => handleSubmit(e)}>
-            <TextField
-              id="outlined-basic"
-              label="Email"
-              variant="outlined"
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <TextField
-              id="outlined-password-input"
-              label="Password"
-              type="password"
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <button type="submit">Login</button>
+            <Grid item lg={12} md={12} xs={12} id="input">
+              <TextField
+                id="outlined-basic"
+                label="Email"
+                variant="outlined"
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </Grid>
+            <Grid item lg={12} md={12} xs={12} id="input">
+              <TextField
+                id="outlined-password-input"
+                label="Password"
+                type="password"
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </Grid>
+
+            <Button type="submit" variant="outlined">
+              Login
+            </Button>
           </form>
-          <p>{errorMessage}</p>
-          <p>{alert}</p>
+          {error && <Alert severity="error" id='alertInput'>{errorMessage}</Alert>}
           <div id="registerSection">
-            <p>Dont have an account?</p>
-            <Link to="/register" id="register">
-              Register Here
-            </Link>
+            <p>
+              Dont have an account?{" "}
+              <Link to="/register" id="register">
+                Register Here
+              </Link>
+            </p>
           </div>
         </Card>
-      </div>
-    </div>
+      </Grid>
+    </Grid>
   );
 }
 

@@ -19,8 +19,9 @@
 }
 
 #dropdown {
-  position: relative;
-  top: -30px;
+  position: absolute;
+  top: -5px;
+  margin-left: 2%;
 }
 
 #subheading {
@@ -83,8 +84,18 @@
   top: -15px;
 }
 
+#dateTimeQuestion {
+  margin-top: 5%;
+}
+
 #edititem {
   margin: 2%;
+}
+
+#sendBtn {
+  position: relative;
+  top: -50px;
+  margin-left: 90%;
 }
 
 #edititemText, #validationError {

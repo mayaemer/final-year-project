@@ -7,7 +7,12 @@ import BackButton from "../components/BackButton";
 import $ from "jquery";
 import Button from "@mui/material/Button";
 import FormGroup from "@mui/material/FormGroup";
-import { Checkbox, FormControlLabel, IconButton } from "@mui/material";
+import {
+  Checkbox,
+  FormControlLabel,
+  IconButton,
+  Snackbar,
+} from "@mui/material";
 import Spinner from "react-bootstrap/Spinner";
 import Alert from "@mui/material/Alert";
 import Grid from "@mui/material/Grid";
@@ -15,9 +20,13 @@ import Card from "@mui/material/Card";
 import TextField from "@mui/material/TextField";
 import RemoveIcon from "@mui/icons-material/Remove";
 import Refresh from "../components/Refresh";
-import { ViewQuilt } from "@mui/icons-material";
+import "../styles/SelectedQuiz.css";
+import Table from "react-bootstrap/Table";
+import { Close } from "@mui/icons-material";
 
 function SelectedQuiz() {
+  Axios.defaults.withCredentials = true;
+
   const { groupId, quizId } = useParams("/:groupId/:quizId");
 
   const navigate = useNavigate();
@@ -42,6 +51,8 @@ function SelectedQuiz() {
     gradeBtn: false,
   });
 
+  const [open, setOpen] = useState(false);
+
   const [groupInfo, setGroupInfo] = useState([]);
   const [userInfo, setUserInfo] = useState({
     email: "",
@@ -58,6 +69,8 @@ function SelectedQuiz() {
     complete: false,
     userCompleted: false,
   });
+
+  const [resultsAvailable, setResultsAvailable] = useState(false);
 
   const [quizType, setQuizType] = useState({
     mcq: false,
@@ -86,13 +99,15 @@ function SelectedQuiz() {
 
   const [errorMsg, setErrorMsg] = useState("");
 
+  const [currentUserQuiz, setCurrentUserQuiz] = useState();
+
   const handleMarks = (e) => {
     const re = /^[0-9\b]+$/;
     const qid = e.target.id;
     const mark = e.target.value;
     if (mark === "" || re.test(mark)) {
       if (mark > 5) {
-        setErrorMsg("Exceeds maximum mark.");
+        setErrorMsg("Invalid mark input. Exceeds maximum mark.");
         setError(qid);
       } else if (mark <= 5) {
         setCurrMark({
@@ -102,7 +117,7 @@ function SelectedQuiz() {
         unsetError(qid);
       }
     } else {
-      setErrorMsg("Must be a numeric value.");
+      setErrorMsg("Invalid mark input. Must be a numeric value.");
       setError(qid);
     }
   };
@@ -127,6 +142,7 @@ function SelectedQuiz() {
       qid: currMark.qid,
       mark: currMark.mark,
     };
+
     const setSaved = savedMarks.find((mark) => mark.qid === currMark.qid);
 
     if (setSaved != undefined) {
@@ -169,12 +185,12 @@ function SelectedQuiz() {
   };
 
   const cancelGrade = () => {
-        setView({
+    setView({
       ...view,
       gradeQuiz: false,
       gradeBtn: true,
     });
-  }
+  };
 
   const formatMcqAns = (data) => {
     let ansObjArr = [];
@@ -229,7 +245,11 @@ function SelectedQuiz() {
       ...view,
       teacherQuizInfo: true,
       teacherReview: false,
+      gradeQuiz: false,
+      gradeBtn: false,
     });
+
+    setInputError([]);
   };
 
   const getSelectedQuiz = (accountEmail) => {
@@ -239,14 +259,51 @@ function SelectedQuiz() {
     Axios.post("http://localhost:3001/getSelectedQuiz", data)
       .then((res) => {
         setQuizData(res.data);
+        setResultsAvailable(res.data.releaseResults);
         checkDateTime(res.data.start, res.data.end);
         setQuestionData(res.data.questions);
         getQuizParticipants(res.data.results, accountEmail);
+        getCurrentUsersQuiz(res.data);
         checkQuizType(res.data.type);
         console.log(res);
       })
       .catch((e) => console.error(e));
   };
+
+  const getCurrentUsersQuiz = (data, accountEmail) => {
+    data.results.forEach((result) => {
+      if (result.email === accountEmail) {
+        setCurrentUserQuiz(result);
+      }
+    });
+  };
+
+  const releaseResults = () => {
+    const data = {
+      ID: quizId,
+    };
+    Axios.post("http://localhost:3001/releaseResults", data)
+      .then((res) => {
+        console.log(res);
+        setOpen(true);
+      })
+      .catch((e) => console.error(e));
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+
+  const action = (
+    <IconButton
+      size="small"
+      aria-label="close"
+      color="inherit"
+      onClick={handleClose}
+    >
+      <Close fontSize="small" />
+    </IconButton>
+  );
 
   const checkQuizType = (type) => {
     //console.log(type);
@@ -391,7 +448,7 @@ function SelectedQuiz() {
     });
 
     const total = 100 * (totalMarks / totalAvailableMarks);
-    return total;
+    return total.toFixed(2);
   };
 
   const gradeMCQ = () => {
@@ -419,7 +476,7 @@ function SelectedQuiz() {
     //console.log(totalMarks)
     const total = 100 * (totalMarks / numQuestions);
     //console.log(total)
-    return total;
+    return total.toFixed(2);
   };
 
   const saveAnswer = () => {
@@ -506,7 +563,7 @@ function SelectedQuiz() {
   };
 
   const sendAnswers = (data) => {
-    setTimeout(
+    setTimeout(() => {
       Axios.post("http://localhost:3001/sendAnswers", data)
         .then((result) => {
           console.log(result);
@@ -517,9 +574,8 @@ function SelectedQuiz() {
             complete: true,
           });
         })
-        .catch((e) => console.error(e)),
-      2000
-    );
+        .catch((e) => console.error(e));
+    }, 2000);
   };
 
   const quizComplete = () => {
@@ -546,6 +602,7 @@ function SelectedQuiz() {
           fname: response.data.user.Fname,
           sname: response.data.user.Sname,
         });
+        console.log(response);
         const accountEmail = response.data.user._id;
         const membersArr = [];
         members.forEach((member) => {
@@ -609,97 +666,192 @@ function SelectedQuiz() {
   }, []);
 
   return (
-    <div>
-      <div id="groupTitle">
+    <Grid lg={12} item container>
+      <Grid id="groupTitle">
         <h1 id="groupHeader">{groupInfo.groupName}</h1>
-      </div>
-      <BackButton destination={"quiz/" + groupId}></BackButton>
-      <h3>{quizData.title}</h3>
+      </Grid>
 
-      {view.teacherMain && (
-        <Grid>
-          <Card>
+      <Card id="groupCard">
+        <Grid item lg={12} md={12} xs={12}>
+          <h3 id="header">{quizData.title}</h3>
+        </Grid>
+
+        {view.teacherQuizInfo && (
+          <Grid item lg={1} md={1} xs={1} id="btnSection">
+            <BackButton destination={"quiz/" + groupId}></BackButton>
+          </Grid>
+        )}
+
+        {view.student && (
+          <Grid item lg={1} md={1} xs={1} id="btnSection">
+            <BackButton destination={"quiz/" + groupId}></BackButton>
+          </Grid>
+        )}
+
+        {view.teacherReview && (
+          <Grid item lg={1} md={1} xs={1} id="btnSection">
+            <IconButton
+              aria-label="closeReview"
+              onClick={closeReview}
+              id="reviewBtn"
+            >
+              <RemoveIcon />
+            </IconButton>
+          </Grid>
+        )}
+
+        {view.teacherMain && (
+          <Grid>
             {view.teacherQuizInfo && (
-              <Grid>
-                <p>Quiz starts: {quizData.start}</p>
-                <p>Quiz ends: {quizData.end}</p>
-                <p>Quiz type: {quizData.type}</p>
-                <p>Completed by:</p>
-                {completedBy.noParticipants && (
-                  <p>No users have completed this quiz.</p>
-                )}
-                {completedBy.participantsList && (
-                  <Grid>
-                    <ul>
-                      {participantList.map((item) => (
-                        <Grid>
-                          <Grid>
-                            <p id={item.email}>
+              <Grid container spacing={2}>
+                <Grid item lg={3} md={3} xs={12} id="quizTextSection">
+                  <p id="quizText">Quiz starts: {quizData.start}</p>
+                  <p id="quizText">Quiz ends: {quizData.end}</p>
+                  <p id="quizText">Quiz type: {quizData.type}</p>
+                </Grid>
+                <Grid item lg={8} md={8} xs={12} id="quizTable">
+                  <Table bordered>
+                    <thead>
+                      <tr>
+                        <th id="tableHead">Completed By</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    {completedBy.noParticipants && (
+                      <tr>
+                        <p id="incompleteText">
+                          No users have completed this quiz.
+                        </p>
+                      </tr>
+                    )}
+                    {completedBy.participantsList && (
+                      <tbody>
+                        {participantList.map((item) => (
+                          <tr>
+                            <td id={item.email}>
                               {item.fname} {item.sname}
-                            </p>
-                          </Grid>
-                          <Grid>
-                            <Button id={item.email} onClick={showUsersQuiz}>
-                              Review results
-                            </Button>
-                          </Grid>
-                        </Grid>
-                      ))}
-                    </ul>
-                  </Grid>
-                )}
+                            </td>
+                            <td>
+                              <Button id={item.email} onClick={showUsersQuiz}>
+                                Review results
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    )}
+                  </Table>
+                </Grid>
+                <Grid item lg={12} md={12} xs={12}>
+                  {!resultsAvailable && (
+                    <Button variant="outlined" onClick={releaseResults}>
+                      Release results
+                    </Button>
+                  )}
+                  <Snackbar
+                    open={open}
+                    autoHideDuration={6000}
+                    onClose={handleClose}
+                    message="Results released successfully."
+                    action={action}
+                  />
+                </Grid>
               </Grid>
             )}
 
             {view.teacherReview && (
-              <Grid>
-                <IconButton
-                  aria-label="closeReview"
-                  onClick={closeReview}
-                  id="reviewBtn"
-                >
-                  <RemoveIcon />
-                </IconButton>
-
-                <p>
-                  Quiz attempt of: {selectedUserData.userFname}{" "}
-                  {selectedUserData.userSname}
-                </p>
-                <p>Quiz finished at: {selectedUserData.end}</p>
-                <p>Grade: {selectedUserData.grade}</p>
+              <Grid container spacing={2}>
+                <Grid item lg={3} md={3} xs={12} id="reviewTextSection">
+                  <div id="quizTextDiv">
+                    <p id="quizText">
+                      Quiz attempt of: {selectedUserData.userFname}{" "}
+                      {selectedUserData.userSname}
+                    </p>
+                    <p id="quizText">
+                      Quiz finished at: {selectedUserData.end}
+                    </p>
+                    <p id="quizText">Grade: {selectedUserData.grade}</p>
+                  </div>
+                </Grid>
                 {quizType.text && (
-                  <Grid>
+                  <Grid item lg={8} md={8} xs={12} id="reviewQuizSection">
                     {selectedUserData.answers.map((ans, index) => (
-                      <Grid>
-                        <p>Q.{ans.id}</p>
-                        <p>{ans.question}</p>
-
-                        <p>{ans.answer}</p>
+                      <Grid container spacing={2} className="reviewSection">
+                        <Grid container spacing={2} id="reviewQuestionSection">
+                          <Grid item lg={1} md={1} xs={1} id="reviewQ">
+                            <p>Q.{ans.id}</p>
+                          </Grid>
+                          <Grid
+                            item
+                            lg={10}
+                            md={10}
+                            xs={10}
+                            id="reviewQuestion"
+                          >
+                            <p>{ans.question}</p>
+                          </Grid>
+                        </Grid>
+                        <Grid
+                          item
+                          lg={12}
+                          md={12}
+                          xs={12}
+                          id="reviewQuestion"
+                          className="reviewAns"
+                        >
+                          <TextField
+                            multiline
+                            rows={4}
+                            fullWidth
+                            defaultValue={ans.answer}
+                            InputProps={{
+                              readOnly: true,
+                            }}
+                          />
+                        </Grid>
                         {view.gradeQuiz && (
-                          <Grid>
-                            <TextField
-                              id={ans.id}
-                              variant="outlined"
-                              sx={{ width: 80 }}
-                              size="small"
-                              onBlur={saveMark}
-                              name={index}
-                              onChange={handleMarks}
-                              defaultValue={currMark.mark}
-                            />
-                            <p>/5</p>
+                          <Grid container spacing={2}>
+                            <Grid item lg={11} md={11} xs={11} id="markField">
+                              <TextField
+                                id={ans.id}
+                                variant="outlined"
+                                sx={{ width: 80 }}
+                                size="small"
+                                onBlur={saveMark}
+                                name={index}
+                                onChange={handleMarks}
+                                defaultValue={currMark.mark}
+                              />
+                            </Grid>
+                            <Grid item lg={1} md={1} xs={1} id="availableMark">
+                              <p>/5</p>
+                            </Grid>
                           </Grid>
                         )}
 
-                        {inputError.includes(ans.id) && <p>{errorMsg}</p>}
+                        {inputError.includes(ans.id) && (
+                          <Grid item lg={11} md={11} xs={11} id="inputError">
+                            <Alert severity="error">{errorMsg}</Alert>
+                          </Grid>
+                        )}
                       </Grid>
                     ))}
                     {view.gradeQuiz && (
                       <Grid>
-                        <Button variant="outlined" onClick={saveGrade}>
+                        <Button
+                          id="reviewBtn"
+                          variant="outlined"
+                          onClick={saveGrade}
+                        >
                           Save
                         </Button>
-                        <Button variant="outlined" onClick={cancelGrade}>Cancel</Button>
+                        <Button
+                          id="reviewBtn"
+                          variant="outlined"
+                          onClick={cancelGrade}
+                        >
+                          Cancel
+                        </Button>
                       </Grid>
                     )}
 
@@ -712,121 +864,163 @@ function SelectedQuiz() {
                 )}
 
                 {quizType.mcq && (
-                  <Grid>
+                  <Grid item lg={8} md={8} xs={12} id="reviewQuizSection">
                     {selectedUserData.answers.map((item) => (
-                      <Grid>
-                        <p>
-                          Q.{item.questions.id} {item.questions.question}
-                        </p>
-                        {item.questions.answers.map((ans) => (
+                      <Grid container spacing={2} className="reviewSection">
+                        <Grid container spacing={2} id="reviewQuestionSection">
                           <Grid
-                            style={{
-                              backgroundColor: ans.correct
-                                ? "#d9fae0"
-                                : "white",
-                            }}
+                            item
+                            lg={12}
+                            md={12}
+                            xs={12}
+                            id="reviewQ"
+                            className="mcqReview"
                           >
-                            <Checkbox
-                              disabled
-                              defaultChecked={ans.selected}
-                            ></Checkbox>
-                            <p>{ans.answer}</p>
+                            <p>
+                              Q.{item.questions.id} {item.questions.question}
+                            </p>
+                            <hr />
                           </Grid>
-                        ))}
+
+                          {item.questions.answers.map((ans) => (
+                            <Grid
+                              item
+                              lg={12}
+                              md={12}
+                              xs={12}
+                              style={{
+                                backgroundColor: ans.correct
+                                  ? "#d9fae0"
+                                  : "white",
+                              }}
+                              className="mcqReview"
+                            >
+                              <Checkbox
+                                disabled
+                                defaultChecked={ans.selected}
+                              ></Checkbox>
+                              <p>{ans.answer}</p>
+                            </Grid>
+                          ))}
+                        </Grid>
                       </Grid>
                     ))}
                   </Grid>
                 )}
               </Grid>
             )}
-          </Card>
-        </Grid>
-      )}
+          </Grid>
+        )}
 
-      {view.student && (
-        <Grid>
-          {quizAvailable.notAvailableStart && <p>Quiz not available yet</p>}
+        {view.student && (
+          <Grid>
+            {quizAvailable.notAvailableStart && (
+              <p>Quiz is not available yet.</p>
+            )}
 
-          {quizAvailable.notAvailableEnd && <p>Quiz ended</p>}
+            {quizAvailable.notAvailableEnd && (
+              <p>Quiz is no longer available.</p>
+            )}
 
-          {quizAvailable.available && (
-            <div>
-              <p>Current User</p>
-              <p>
-                {userInfo.fname} {userInfo.sname}
-              </p>
-              <p>Quiz Period</p>
-              <p>
-                Available on {quizData.start} until {quizData.end}
-              </p>
-              <Button variant="outlined" onClick={startQuiz}>
-                Start Quiz
-              </Button>
-            </div>
-          )}
+            {quizAvailable.available && (
+              <Grid lg={12} item container spacing={2} id="availableQuiz">
+                <Grid item lg={12} md={12} xs={12}>
+                  <p id="subheader">Current User</p>
+                </Grid>
+                <Grid item lg={12} md={12} xs={12}>
+                  <p id="quizInfo">
+                    {userInfo.fname} {userInfo.sname}
+                  </p>
+                </Grid>
+                <Grid item lg={12} md={12} xs={12}>
+                  <p id="subheader">Quiz Period</p>
+                </Grid>
+                <Grid item lg={12} md={12} xs={12}>
+                  <p id="quizInfo">
+                    Available on {quizData.start} until {quizData.end}
+                  </p>
+                </Grid>
+                <Grid item lg={12} md={12} xs={12} id="startBtn">
+                  <Button variant="outlined" onClick={startQuiz}>
+                    Start Quiz
+                  </Button>
+                </Grid>
+              </Grid>
+            )}
 
-          {quizAvailable.userCompleted && (
-            <Grid>
-              <p>Quiz has already been completed.</p>
-            </Grid>
-          )}
+            {quizAvailable.userCompleted && (
+              <Grid>
+                <p>Quiz submitted on {currentUserQuiz.end}</p>
+                {!resultsAvailable && <p>Grade unavailable.</p>}
+                {resultsAvailable && <p>Grade: {currentUserQuiz.grade} %</p>}
+              </Grid>
+            )}
 
-          {quizAvailable.start && (
-            <div>
-              {Object.keys(questionData).map((q, i) => (
-                <div id="questionSection">
-                  <p>Question {questionData[q].id}</p>
-                  <p>{questionData[q].question}</p>
-                  {quizType.mcq && (
-                    <FormGroup>
-                      {Object.keys(questionData[q].answers).map((a, j) => (
-                        <FormControlLabel
-                          value={questionData[q].answers[a].id}
-                          control={<Checkbox id={questionData[q].id} />}
-                          label={questionData[q].answers[a].answer}
-                          onClick={selectOption}
-                        ></FormControlLabel>
-                      ))}
-                    </FormGroup>
-                  )}
-                  {quizType.text && (
-                    <Grid>
-                      <TextField
-                        fullWidth
-                        id={questionData[q].id}
-                        placeholder="Type here.."
-                        multiline
-                        rows={4}
-                        onClick={saveAnswer}
-                        onChange={handleTextChange}
-                      />
+            {quizAvailable.start && (
+              <div>
+                {Object.keys(questionData).map((q, i) => (
+                  <Grid lg={10} item container spacing={2} id="mcqSection">
+                    <Grid item lg={12} md={12} xs={12}>
+                      <p id="mcqQ">
+                        Q.{questionData[q].id} {questionData[q].question}
+                      </p>
                     </Grid>
-                  )}
-                </div>
-              ))}
+                    {quizType.mcq && (
+                      <Grid item lg={12} md={12} xs={12} id="mcqQuestion">
+                        <FormGroup>
+                          {Object.keys(questionData[q].answers).map((a, j) => (
+                            <FormControlLabel
+                              id="checkBox"
+                              value={questionData[q].answers[a].id}
+                              control={<Checkbox id={questionData[q].id} />}
+                              label={questionData[q].answers[a].answer}
+                              onClick={selectOption}
+                            ></FormControlLabel>
+                          ))}
+                        </FormGroup>
+                      </Grid>
+                    )}
+                    {quizType.text && (
+                      <Grid item lg={12} md={12} xs={12} id="textQ">
+                        <TextField
+                          fullWidth
+                          id={questionData[q].id}
+                          placeholder="Type here.."
+                          multiline
+                          rows={6}
+                          onClick={saveAnswer}
+                          onChange={handleTextChange}
+                        />
+                      </Grid>
+                    )}
+                  </Grid>
+                ))}
 
-              <Button variant="outlined" onClick={endQuiz}>
-                End Quiz
-              </Button>
-            </div>
-          )}
+                <Button variant="outlined" onClick={endQuiz}>
+                  End Quiz
+                </Button>
+              </div>
+            )}
 
-          {quizAvailable.loading && (
-            <div>
-              <p>Saving data</p>
-              <Spinner></Spinner>
-            </div>
-          )}
+            {quizAvailable.loading && (
+              <div>
+                <p>Saving data</p>
+                <Spinner></Spinner>
+              </div>
+            )}
 
-          {quizAvailable.complete && (
-            <Alert severity="success">
-              Quiz Complete
-              <Button onClick={quizComplete}>Ok</Button>
-            </Alert>
-          )}
-        </Grid>
-      )}
-    </div>
+            {quizAvailable.complete && (
+              <Grid item lg={6} md={6} xs={6} id="alert">
+                <Alert severity="success">
+                  Quiz Complete
+                  <Button onClick={quizComplete}>Ok</Button>
+                </Alert>
+              </Grid>
+            )}
+          </Grid>
+        )}
+      </Card>
+    </Grid>
   );
 }
 

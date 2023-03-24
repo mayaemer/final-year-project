@@ -4,11 +4,19 @@
 }
 
 #chatBody{
-    max-height: 65%;
+    max-height: 60%;
 }
 
 #dummy{
     color: white;
-    font-size: 65px;
-    height: 50%;
+    font-size: 50px;
 }
+.chatHead {
+    background-color: lightgrey;
+}
+
+#text {
+text-align: center;
+font-size: large;
+}
+

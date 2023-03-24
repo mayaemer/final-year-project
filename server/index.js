@@ -2,10 +2,10 @@
 
 const express = require("express");
 const app = express();
+
 const cors = require("cors");
 const multer = require("multer");
 const path = require("path");
-const { spawn } = require("child_process");
 
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
@@ -14,15 +14,15 @@ const jwt = require("jsonwebtoken");
 
 const bcrypt = require("bcrypt");
 const saltRounds = 10;
-const { body, validationResult, check } = require("express-validator");
-const { MongoClient } = require("mongodb");
-const { ObjectId } = require("mongodb");
 
+const { body, validationResult } = require("express-validator");
+
+const { ObjectId } = require("mongodb");
+const { MongoClient } = require("mongodb");
+
+const { spawn } = require("child_process");
 const BadWordsNext = require("bad-words-next");
 const en = require("bad-words-next/data/en.json");
-//const { data } = require("jquery");
-//const { emitWarning } = require("process");
-
 const profanityCheck = new BadWordsNext({ data: en });
 
 // stack overflow https://stackoverflow.com/questions/31592726/how-to-store-a-file-with-file-extension-with-multer
@@ -50,11 +50,8 @@ app.use(
 );
 
 app.use(express.json());
-
 app.use(bodyParser.urlencoded({ extended: true }));
-
 app.use(cookieParser());
-
 app.use(
   session({
     key: "userId",
@@ -82,9 +79,6 @@ try {
 
 // function to upload files to database
 app.post("/upload", upload.array("files"), async (req, res) => {
-  //console.log(req.files);
-  //console.log(req.body.title);
-
   const currDateTime = getCurrentDateTime();
 
   const uploadData = {
@@ -116,7 +110,7 @@ app.get("/readfiles", (req, res) => {
 app.post("/deleteContent", (req, res) => {
   const id = ObjectId(req.body.contentid);
   if (req.body.filename === undefined) {
-    console.log(id);
+    //console.log(id);
     deleteItem(res, "fileuploads", id);
   } else {
     const filename = req.body.filename;
@@ -135,18 +129,26 @@ const checkEmail = function (email) {
   });
 };
 
+// function to insert new user into database
 function registerUser(res, userData) {
-  db.collection("users")
-    .insertOne(userData)
-    .then((result) => {
-      res.send({ message: "Success" });
-    })
-    .catch((err) => {
-      res.send({ message: "Error, account not registered." });
-    });
+  try {
+    db.collection("users")
+      .insertOne(userData)
+      .then((result) => {
+        res.send({ message: "Success" });
+      })
+      .catch((err) => {
+        res.send({ message: "Error, account not registered." });
+      });
+  } catch (e) {
+    console.log(e);
+  }
 }
 
-// add new users to database, hash their passwords
+// user registration routing method
+// validates registration data
+// validates password and password confirmation match
+// hashes password
 app.post(
   "/register",
   [
@@ -167,43 +169,36 @@ app.post(
       } else {
         bcrypt.hash(req.body.Pass, saltRounds, (err, hash) => {
           if (err) {
-            console.log(err);
+            res.send(err);
           } else {
-            const check = async (email) => {
-              const result = await checkEmail(email);
-              if (result === null && req.body.UserType === "Teacher") {
-                userData = {
-                  _id: req.body.Email,
-                  Fname: req.body.Fname,
-                  Sname: req.body.Sname,
-                  Pass: hash,
-                  UserType: req.body.UserType,
-                  Groups: [],
-                };
-
-                registerUser(res, userData);
-              } else if (result === null && req.body.UserType === "Student") {
-                userData = {
-                  _id: req.body.Email,
-                  Fname: req.body.Fname,
-                  Sname: req.body.Sname,
-                  Pass: hash,
-                  UserType: req.body.UserType,
-                };
-
-                registerUser(res, userData);
-              } else {
-                res.send({ message: "Account with email already exists." });
-              }
-            };
-
-            check(req.body.Email);
+            continueRegistration(req.body, hash, res);
           }
         });
       }
     }
   }
 );
+
+// checks email does not already exist in database
+// prepares data for to be stored
+function continueRegistration(data, hash, res) {
+  const check = async (email) => {
+    const result = await checkEmail(email);
+    if (result === null) {
+      userData = {
+        _id: data.Email,
+        Fname: data.Fname,
+        Sname: data.Sname,
+        Pass: hash,
+        UserType: data.UserType,
+      };
+      registerUser(res, userData);
+    } else {
+      res.send({ message: "Account with email already exists." });
+    }
+  };
+  check(data.Email);
+}
 
 app.get("/authenticate", (req, res) => {
   if (req.session.user) {
@@ -213,14 +208,14 @@ app.get("/authenticate", (req, res) => {
   }
 });
 
-//middleware to checks if token has been stored in local storage
+//middleware to check token in valid
 const verifyJWT = (req, res, next) => {
   const token = req.headers["x-access-token"];
 
   if (!token) {
     res.send(false);
   } else {
-    jwt.verify(token, "jwtSecret", (err, decoded) => {
+    jwt.verify(token, "P1n3@ppl322$", (err, decoded) => {
       if (err) {
         res.send(false);
       } else {
@@ -236,6 +231,9 @@ app.get("/isAuthenticated", verifyJWT, (req, res) => {
   res.send(true);
 });
 
+// login endpoint
+// validates data sent over request body
+//
 app.post(
   "/login",
   [
@@ -254,26 +252,26 @@ app.post(
       db.collection("users")
         .findOne({ _id: email })
         .then((result) => {
+          if (result === null) {
+            res.json({ message: "User does not exist." });
+          }
           bcrypt.compare(pass, result.Pass, (err, response) => {
             if (response) {
-              const token = jwt.sign({ email }, "jwtSecret", {
+              req.session.user = result;
+              const token = jwt.sign({ email }, "P1n3@ppl322$", {
                 expiresIn: 86400,
               });
-
-              req.session.user = result;
-
               res.json({ auth: true, token: token, result: result });
             } else {
               res.json({
                 auth: false,
-                message: "Wrong usersname/ password combination.",
+                message: "Wrong password",
               });
             }
           });
         })
         .catch((err) => {
-          res.send("Fail");
-          console.log(err);
+          res.send(err);
         });
     }
   }
@@ -295,9 +293,10 @@ app.get("/logout", (req, res) => {
   }
 });
 
+// check group end point
+// gets the groups of each type of user
 app.post("/checkGroup", (req, res) => {
   const email = req.body.Email;
-  //console.log(req.body);
   if (req.body.Usertype === "Teacher") {
     getTeachersGroups(email, res);
   } else if (req.body.Usertype === "Student") {
@@ -306,83 +305,109 @@ app.post("/checkGroup", (req, res) => {
 });
 
 function getStudentGroups(email, res) {
-  db.collection("groups")
-    .find({ members: { $elemMatch: { email: email } } })
-    .toArray(function (err, result) {
-      if (err) console.log(err);
-      res.send(result);
-    });
+  try {
+    db.collection("groups")
+      .find({ members: { $elemMatch: { email: email } } })
+      .toArray(function (err, result) {
+        if (err) console.log(err);
+        res.send(result);
+      });
+  } catch (e) {
+    res.send(e);
+  }
 }
 
 function getTeachersGroups(email, res) {
-  //console.log(email);
-  db.collection("groups")
-    .find({ "creator.email": email })
-    .toArray(function (err, result) {
-      if (err) console.log(err);
-      res.send(result);
-    });
+  try {
+    db.collection("groups")
+      .find({ "creator.email": email })
+      .toArray(function (err, result) {
+        if (err) console.log(err);
+        res.send(result);
+      });
+  } catch (e) {
+    res.send(e);
+  }
 }
 
-app.post("/createGroup", (req, res) => {
-  //console.log(req.body);
-  const creator = req.body.creator;
-  const gName = req.body.GroupName;
-  const pass = req.body.Password;
-  const confirm = req.body.Confirm;
-  const gimage = req.body.Image;
+// create group endpoint
+app.post(
+  "/createGroup",
+  [
+    body("creator").isLength({ min: 3, max: 100 }),
+    body("GroupName").isLength({ max: 200 }),
+    body("Password").isLength({ min: 8, max: 50 }),
+    body("Confirm").isLength({ min: 8, max: 50 }),
+  ],
+  (req, res) => {
+    const creator = req.body.creator;
+    const gName = req.body.GroupName;
+    const pass = req.body.Password;
+    const confirm = req.body.Confirm;
+    const gimage = req.body.Image;
+    const description = req.body.description;
 
-  if (pass === confirm) {
-    bcrypt.hash(pass, saltRounds, (err, hash) => {
-      if (err) {
-        console.log(err);
-      } else {
-        groupData = {
-          groupName: gName,
-          password: hash,
-          creator: creator,
-          members: [],
-          content: [],
-          image: gimage,
-        };
+    const validationErrors = validationResult(req);
+    if (!validationErrors.isEmpty()) {
+      console.log(validationErrors);
+      res.status(400).json({ errors: validationErrors.array() });
+    }
+    if (pass === confirm) {
+      bcrypt.hash(pass, saltRounds, (err, hash) => {
+        if (err) {
+          console.log(err);
+        } else {
+          groupData = {
+            groupName: gName,
+            password: hash,
+            creator: creator,
+            description: description,
+            members: [],
+            image: gimage,
+          };
 
-        db.collection("groups")
-          .insertOne(groupData)
-          .then((result) => res.send({ message: "Success" }))
-          .catch((e) => console.error(e));
-      }
-    });
-  } else {
-    res.send("Passwords do not match.");
+          insertData(res, "groups", groupData);
+        }
+      });
+    } else {
+      res.send("Passwords do not match.");
+    }
   }
-});
+);
 
 app.post("/groupInfo", (req, res) => {
   const id = ObjectId(req.body.ID);
-  db.collection("groups")
-    .findOne({ _id: id })
-    .then((data) => res.send(data))
-    .catch((e) => res.send(e));
+  findSingle(res, "groups", id);
 });
 
 app.post("/updateInfo", (req, res) => {
   const id = ObjectId(req.body.ID);
   const updatedName = req.body.Name;
 
-  db.collection("groups")
-    .updateOne({ _id: id }, { $set: { groupName: updatedName } })
-    .then((data) => res.send(data))
-    .catch((e) => res.send(e));
+  try {
+    db.collection("groups")
+      .updateOne({ _id: id }, { $set: { groupName: updatedName } })
+      .then((data) => res.send(data))
+      .catch((e) => res.send(e));
+  } catch (e) {
+    res.send(e);
+  }
 });
 
 app.post("/updatePass", (req, res) => {
   const id = ObjectId(req.body.ID);
   const updatedPass = req.body.Pass;
 
-  db.collection("groups")
-    .updateOne({ _id: id }, { $set: { password: updatedPass } })
-    .then((data) => res.send(data))
-    .catch((e) => res.send(e));
+  bcrypt.hash(updatedPass, saltRounds, (err, hash) => {
+    if (err) {
+      console.log(err);
+    } else {
+      db.collection("groups")
+        .updateOne({ _id: id }, { $set: { password: hash } })
+        .then((data) => res.send(data))
+        .catch((e) => res.send(e));
+    }
+  });
 });
 
 app.get("/getGroups", (req, res) => {
@@ -411,22 +436,19 @@ app.post("/searchGroups", (req, res) => {
     });
 });
 
+// endpoint to join group
 app.post("/joinGroup", (req, res) => {
   const id = ObjectId(req.body.group);
-  // console.log(req.body.user);
-  bcrypt.hash(req.body.password, saltRounds, (err, hash) => {
-    if ((err) => console.log(err));
-  });
+
   db.collection("groups")
     .findOne({ _id: id })
     .then((result) => {
       bcrypt.compare(req.body.password, result.password, (err, response) => {
         if (response === true) {
-          //console.log("test");
           addMember(req.body.user, id, res);
         } else {
-          res.send({ message: "Incorrect password." });
           console.error(err);
+          res.send({ message: "Incorrect password." });
         }
       });
     })
@@ -440,6 +462,7 @@ function addMember(user, group, res) {
     .catch((e) => res.send(e));
 }
 
+// endpoint to delete group
 app.post("/deleteGroup", (req, res) => {
   const groupId = req.body.ID;
   const id = ObjectId(req.body.ID);
@@ -448,9 +471,8 @@ app.post("/deleteGroup", (req, res) => {
   db.collection("groups")
     .findOne({ _id: id })
     .then((result) => {
-      bcrypt.compare(pass, result.password, (response, err) => {
+      bcrypt.compare(pass, result.password, (err, response) => {
         if (response) {
-          //deleteItem(res, "groups", id);
           performDelete(id, groupId)
             .then((result) => res.send(result))
             .catch((e) => console.log(e));
@@ -482,26 +504,21 @@ app.post("/deleteQuiz", (req, res) => {
 app.post("/checkProfanity", async (req, res) => {
   const body = req.body.textBody;
   const title = req.body.title;
-
-  //console.log(title);
-
+  
   if (profanityCheck.check(body) === false) {
-    if (title === "undefined" && profanityCheck.check(title) === false) {
+    if (title === undefined) {
       pyProfanityCheck(res, body);
+    } else {
+      if (profanityCheck.check(title) === true) {
+        const data = [1];
+        res.send(data);
+      } else if(profanityCheck.check(title) === false) {
+        pyProfanityCheck(res, title, body);
+      }
     }
-
-    pyProfanityCheck(res, title, body);
   } else {
-    const currDateTime = getCurrentDateTime();
-    const userEmail = req.body.authorEmail;
-
-    const profaneInfo = {
-      profaneText: title + " " + body,
-      dateTime: currDateTime,
-      group: req.body.group,
-    };
-
-    updateOne(res, "users", userEmail, profaneInfo);
+    const data = [1];
+    res.send(data);
   }
 });
 
@@ -516,13 +533,12 @@ app.post("/handleProfanity", (req, res) => {
     dateTime: currDateTime,
   };
 
-  updateOne(res, "groups", groupid, userEmail, profaneInfo);
+  updateProfanity(res, "groups", groupid, userEmail, profaneInfo);
 });
 
 app.post("/postQuestion", (req, res) => {
   const currDateTime = getCurrentDateTime();
 
-  // console.log(req.body)
   const questionData = {
     title: req.body.title,
     textBody: req.body.textBody,
@@ -592,17 +608,39 @@ app.post("/updateGrade", (req, res) => {
   const quizid = ObjectId(req.body.qid);
   const uid = req.body.uid;
   const grade = req.body.grade;
-  console.log(quizid)
-  console.log(uid)
+  console.log(quizid);
+  console.log(uid);
   updateGrade(quizid, "quiz", uid, grade, res);
 });
 
 function updateGrade(qid, collection, uid, grade, res) {
   try {
     db.collection(collection)
-    .updateOne({_id: qid, "results.userEmail": uid}, {$set: {"results.$.grade" : grade}})
-    .then((result) => res.send(result))
-    .catch((e) => console.log(e))
+      .updateOne(
+        { _id: qid, "results.userEmail": uid },
+        { $set: { "results.$.grade": grade } }
+      )
+      .then((result) => res.send(result))
+      .catch((e) => console.log(e));
+  } catch (e) {
+    console.log(e);
+  }
+}
+
+app.post('/releaseResults', (req, res) => {
+  const quizid = ObjectId(req.body.ID);
+  updateRelease(res, quizid);
+})
+
+function updateRelease(res, qid) {
+  try {
+    db.collection('quiz')
+      .updateOne(
+        { _id: qid },
+        { $set: { releaseResults : true } }
+      )
+      .then((result) => res.send(result))
+      .catch((e) => console.log(e));
   } catch (e) {
     console.log(e);
   }
@@ -654,7 +692,7 @@ app.post("/sendMessage", (req, res) => {
     _id: ObjectId,
     sender: req.body.sender,
     receiver: req.body.receiver,
-    message: req.body.message,
+    message: req.body.textBody,
     date:
       date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate(),
     time: date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds(),
@@ -662,6 +700,13 @@ app.post("/sendMessage", (req, res) => {
   const chat = ObjectId(req.body.chat);
   sendMessage(chat, messageData, res);
 });
+
+app.post('/getChat', (req, res) => {
+  const chatId = ObjectId(req.body.chatid)
+
+  findSingle(res, 'chats', chatId)
+})
+
 
 function findAllChats(res, collection, email) {
   try {
@@ -685,7 +730,7 @@ function sendMessage(chat, message, res) {
 }
 
 function pyProfanityCheck(res, title, body) {
-  console.log(body);
+  //console.log(body);
   const python = spawn("python", ["checkProfanity.py", title, body]);
   python.stdout.on("data", function (data) {
     dataToSend = data.toString();
@@ -696,10 +741,13 @@ function pyProfanityCheck(res, title, body) {
   });
 }
 
-function updateOne(res, collection, groupid, email, data) {
+function updateProfanity(res, collection, groupid, email, data) {
   try {
     db.collection(collection)
-      .updateOne({ _id: groupid, "members.email" : email }, { $push: { "members.$.profanityMonitoring": data } })
+      .updateOne(
+        { _id: groupid, "members.email": email },
+        { $push: { "members.$.profanityMonitoring": data } }
+      )
       .then((result) => {
         res.send(result);
       })

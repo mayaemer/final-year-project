@@ -48,10 +48,6 @@ a {
     margin: 2%;
 }
 
-#question {
-    border: 1px solid lightgray;
-}
-
 .questionForm, .savedQuestion {
     background-color: #F8F8F8;
     margin-left: 1.5%;
@@ -61,3 +57,11 @@ a {
     background-color: white;
 }
 
+#errorMsg {
+    margin: auto;
+    margin-bottom: 1%;
+}
+
+#saveBtn {
+    margin-bottom: 2%;
+}

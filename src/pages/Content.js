@@ -26,6 +26,7 @@ import Refresh from "../components/Refresh";
 import DocViewer, { DocViewerRenderers } from "@cyntler/react-doc-viewer";
 import CloseIcon from "@mui/icons-material/Close";
 import { Delete, Settings } from "@mui/icons-material";
+import "../styles/Content.css";
 
 function Content() {
   Axios.defaults.withCredentials = true;
@@ -447,13 +448,15 @@ function Content() {
                   </IconButton>
                 )}
                 {contentDisplay.showSelectedFile && (
-                  <IconButton
-                    aria-label="addGroup"
-                    id="file"
-                    onClick={confirmDelete}
-                  >
-                    <Delete></Delete>
-                  </IconButton>
+                  <Grid id='fileDelete'>
+                    <IconButton
+                      aria-label="addGroup"
+                      id="file"
+                      onClick={confirmDelete}
+                    >
+                      <Delete></Delete>
+                    </IconButton>
+                  </Grid>
                 )}
               </Grid>
             )}
@@ -545,18 +548,18 @@ function Content() {
             )}
 
             {contentDisplay.showSelectedFile && (
-              <Grid container lg={12} >
-                <Grid item lg={12} >
-                  <h3>{selectedFile.originalname}</h3>
+              <Grid container lg={12}>
+                <Grid item lg={12} md={12} xs={12} id="breadcrumb">
+                  <Breadcrumbs
+                    separator={<NavigateNextIcon fontSize="small" />}
+                    aria-label="breadcrumb"
+                  >
+                    {breadcrumbs}
+                  </Breadcrumbs>
                 </Grid>
-                <Breadcrumbs
-                  separator={<NavigateNextIcon fontSize="small" />}
-                  aria-label="breadcrumb"
-                >
-                  {breadcrumbs}
-                </Breadcrumbs>
                 <DocViewer
                   documents={docs}
+                  id="docView"
                   pluginRenderers={DocViewerRenderers}
                   config={{
                     header: {

@@ -19,6 +19,7 @@ import Refresh from "../components/Refresh";
 import Alert from "@mui/material/Alert";
 import Dropdown from "react-bootstrap/Dropdown";
 import "../styles/Questions.css";
+import { Send } from "@mui/icons-material";
 
 function Questions() {
   Axios.defaults.withCredentials = true;
@@ -51,13 +52,14 @@ function Questions() {
     loading: false,
     profanityError: false,
     validationError: false,
+    op: false,
   });
 
   const [selectedQuestion, setSelectedQuestion] = useState();
 
   const [editArr, setEditArr] = useState([]);
 
-  const getQuestions = () => {
+  const getQuestions = (userData) => {
     const data = {
       ID: groupId,
     };
@@ -66,10 +68,19 @@ function Questions() {
         setQuestions(res.data);
         const i = res.data.length - 1;
         setSelectedQuestion(res.data[i]);
-        setAddVisible({
-          ...addVisible,
-          showQuestions: true,
-        });
+        if (res.data[i]["posterId"] === userData.user._id) {
+          setAddVisible({
+            ...addVisible,
+            op: true,
+            showQuestions: true,
+          });
+        } else {
+          setAddVisible({
+            ...addVisible,
+            op: false,
+            showQuestions: true,
+          });
+        }
       } else if (res.data.length === 0) {
         setAddVisible({
           ...addVisible,
@@ -129,7 +140,7 @@ function Questions() {
 
   const getGroupData = () => {
     const data = { ID: groupId };
-    console.log(data)
+    console.log(data);
     Axios.post("http://localhost:3001/groupInfo", data).then((res) => {
       setGroupInfo(res.data);
       $("#groupTitle").css(
@@ -148,6 +159,7 @@ function Questions() {
         const formattedEmail = formatId(email);
         const settingsId = "#" + formattedEmail;
         $(settingsId).show();
+        getQuestions(response.data);
       }
     });
   };
@@ -214,26 +226,25 @@ function Questions() {
     setTimeout(() => checkProfanity(data, handleData), 1000);
   };
 
-  const handleKey = (e) => {
-    if (e.key === "Enter") {
-      const data = {
-        poster: userInfo.user._id,
-        textBody: comment.commentBody,
-        group: groupInfo._id,
-        questionId: comment.questionId,
-      };
+  const handleKey = () => {
+    const data = {
+      poster: userInfo.user._id,
+      textBody: comment.commentBody,
+      group: groupInfo._id,
+      questionId: comment.questionId,
+    };
 
-      console.log(data);
-      const handleData = postComment;
-      checkProfanity(data, handleData);
-    }
+    //console.log(data);
+    const handleData = postComment;
+    checkProfanity(data, handleData);
   };
 
   const checkProfanity = (data, handleData) => {
     Axios.post("http://localhost:3001/checkProfanity", data)
       .then((result) => {
+        console.log(data)
         if (result.data.includes(1)) {
-          console.log(result);
+          //console.log(result);
 
           handleProfanity(data);
         } else {
@@ -322,12 +333,23 @@ function Questions() {
       .then((result) => {
         console.log(result);
         setSelectedQuestion(result.data);
+        if (result.data.posterId === userInfo.email) {
+          setAddVisible({
+            ...addVisible,
+            op: true,
+          });
+        } else {
+          setAddVisible({
+            ...addVisible,
+            op: false,
+          });
+        }
       })
       .catch((e) => console.log(e));
   };
 
   const handleProfanity = (profaneData) => {
-    //console.log(profaneData);
+
     setAddVisible({
       ...addVisible,
       loading: false,
@@ -348,16 +370,9 @@ function Questions() {
 
     Axios.post("http://localhost:3001/handleProfanity", data)
       .then((result) => {
-        console.log(result.data);
+        console.log(result);
       })
       .catch((e) => console.log(e));
-  };
-
-  const handleEdit = (e) => {
-    const questionid = e.target.name;
-    if (!editArr.includes(questionid)) {
-      setEditArr([...editArr, questionid]);
-    }
   };
 
   const handleDelete = (e) => {
@@ -379,6 +394,17 @@ function Questions() {
     questions.forEach((question) => {
       if (question._id === selectedItem) {
         setSelectedQuestion(question);
+        if (question.posterId === userInfo.email) {
+          setAddVisible({
+            ...addVisible,
+            op: true,
+          });
+        } else {
+          setAddVisible({
+            ...addVisible,
+            op: false,
+          });
+        }
       }
     });
   };
@@ -402,7 +428,6 @@ function Questions() {
 
         if (!unmounted) {
           getGroupData();
-          getQuestions();
         }
       }, 0);
 
@@ -542,25 +567,28 @@ function Questions() {
                   <h2 id="heading">{selectedQuestion.title}</h2>
 
                   <Grid item lg={1} md={1} xs={2} id="dropdown">
-                    <Dropdown>
-                      <Dropdown.Toggle
-                        variant="light"
-                        id="dropdown-basic"
-                      ></Dropdown.Toggle>
+                    {addVisible.op && (
+                      <Dropdown>
+                        <Dropdown.Toggle
+                          variant="light"
+                          id="dropdown-basic"
+                        ></Dropdown.Toggle>
 
-                      <Dropdown.Menu>
-                        {/* <Dropdown.Item name={question._id} onClick={handleEdit}>
+                        <Dropdown.Menu>
+                          {/* <Dropdown.Item name={question._id} onClick={handleEdit}>
                           Edit Post
                         </Dropdown.Item> */}
-                        <Dropdown.Item
-                          name={selectedQuestion._id}
-                          onClick={handleDelete}
-                        >
-                          Delete Post
-                        </Dropdown.Item>
-                      </Dropdown.Menu>
-                    </Dropdown>
+                          <Dropdown.Item
+                            name={selectedQuestion._id}
+                            onClick={handleDelete}
+                          >
+                            Delete Post
+                          </Dropdown.Item>
+                        </Dropdown.Menu>
+                      </Dropdown>
+                    )}
                   </Grid>
+
                   <Grid item lg={12} md={12} xs={12} id="subheading">
                     <p id="dateTimeQuestion">
                       {selectedQuestion.poster} posted at{" "}
@@ -612,8 +640,10 @@ function Questions() {
                           questionId: e.target.name,
                         })
                       }
-                      onKeyDown={handleKey}
                     />
+                    <IconButton id="sendBtn" onClick={handleKey}>
+                      <Send />
+                    </IconButton>
                   </form>
                   {selectedQuestion.comments.map((comment) => (
                     <Grid item lg={12} md={12} xs={12} id="comment">

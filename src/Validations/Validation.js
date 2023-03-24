@@ -6,14 +6,14 @@ export const registrationSchema = yup.object().shape({
   Sname: yup.string().required(),
   Pass: yup
     .string()
-    .min(8, "Must have at least 8 characters")
-    .max(50, "Too many characters")
-    .required("Password is a required field"),
+    .min(8)
+    .max(50)
+    .required(),
   Confirm: yup
     .string()
-    .min(8, "Must have at least 8 characters")
-    .max(50, "Too many characters")
-    .required("Must confirm password"),
+    .min(8)
+    .max(50)
+    .required(),
   UserType: yup.string().required(),
 });
 
@@ -21,9 +21,9 @@ export const loginSchema = yup.object().shape({
   Email: yup.string().email().required(),
   Pass: yup
     .string()
-    .min(8, "Must have at least 8 characters")
-    .max(50, "Too many characters")
-    .required("Password is a required field"),
+    .min(8)
+    .max(50)
+    .required(),
 });
 
 export const updateGroupNameSchema = yup.object().shape({
@@ -33,45 +33,47 @@ export const updateGroupNameSchema = yup.object().shape({
 export const updatePassSchema = yup.object().shape({
   Pass: yup
     .string()
-    .min(8, "Must have at least 8 characters")
-    .max(50, "Too many characters")
-    .required("Password is a required field")
+    .min(8)
+    .max(50)
+    .required()
     .matches(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/,
-      "Must Contain 8 Characters, One Uppercase, One Lowercase, One Number and One Special Case Character"
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/
     ),
 });
 
 export const createGroupSchema = yup.object().shape({
-  GroupName: yup.string().max(100, "Too many characters"),
+  GroupName: yup.string().max(100),
   Password: yup
     .string()
-    .min(8, "Must have at least 8 characters")
-    .max(50, "Too many characters")
-    .required("Password is a required field")
+    .min(8)
+    .max(50)
+    .required()
     .matches(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/,
-      "Must Contain 8 Characters, One Uppercase, One Lowercase, One Number and One Special Case Character"
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/
     ),
-  Confirm: yup
-    .string()
-    .min(8, "Must have at least 8 characters")
-    .max(50, "Too many characters")
-    .required("Must confirm password")
+  Confirm: yup.string().min(8).max(50).required(),
 });
 
 export const postQuestionSchema = yup.object().shape({
-  title: yup.string()
-  .max(50)
-  .required(),
-  textBody: yup.string()
-  .min(8)
-  .max(1000)
-  .required()
-})
+  title: yup.string().max(50).required(),
+  textBody: yup.string().min(8).max(1000).required(),
+});
 
 export const postCommenSchema = yup.object().shape({
-  textBody: yup.string()
-  .max(500)
-  .required()
-})
+  textBody: yup.string().max(500).required(),
+});
+
+export const createQuizInfoSchema = yup.object().shape({
+  title: yup.string().max(50).required(),
+  type: yup.string().required(),
+  start: yup.string().required(),
+  end: yup.string().required(),
+});
+
+export const createQuizSchema = yup.object().shape({
+  question: yup.string().max(250).required()
+});
+
+export const messageSchema = yup.object().shape({
+  textBody: yup.string().max(1000).required()
+});

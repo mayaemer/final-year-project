@@ -1,0 +1,154 @@
+#quizText {
+  font-size: large;
+  text-align: left;
+  padding: 0.7em;
+}
+
+#quizTable,
+#quizTextSection {
+  margin-left: 2%;
+}
+
+#quizTable {
+  margin-top: 1%;
+}
+
+#quizTextSection {
+  position: relative;
+  bottom: -25px;
+  margin-bottom: 5%;
+}
+
+#quizTextSection,
+#quizTextDiv, #mcqSection {
+  border: 1px solid lightgray;
+}
+
+#mcqSection {
+  margin: auto;
+  margin-bottom: 2%;
+}
+
+#quizTextDiv {
+  height: 30%;
+}
+
+#reviewQ {
+  text-align: left;
+}
+
+#reviewQuestion, #availableMark {
+  text-align: left;
+  
+}
+
+#mcqQuestion{
+  margin: auto;
+  justify-content: center;
+}
+
+#markField {
+    text-align: right;
+    margin-bottom: 2%;
+
+}
+
+#availableMark {
+    margin-top: 1%;
+}
+
+#reviewQ,
+#reviewQuestion, #mcqQ {
+  font-size: larger;
+}
+
+#mcqQ {
+  float: left;
+}
+
+#reviewQuizSection {
+  margin-left: 5%;
+  padding-right: 2%;
+  margin-top: 1.5%;
+}
+
+#reviewQuestionSection {
+  margin-left: 1%;
+  margin-top: 5%;
+}
+
+.reviewSection{
+    border: 1px solid lightgray;
+    margin: 5%;
+
+}
+
+#checkBox {
+  border: 1px solid lightgray;
+  margin-bottom: 2%;
+}
+
+#checkBox:hover{
+  background-color: rgb(169, 178, 187);
+}
+
+#alert {
+  margin: auto;
+}
+
+#textQ{
+  margin-bottom: 2%;
+  margin-right: 2%;
+
+}
+
+.reviewAns {
+    padding: 0.8em;
+}
+
+#inputError {
+    margin: auto;
+    margin-bottom: 2%;
+}
+
+#reviewBtn {
+    margin: 5%;
+}
+
+#incompleteText {
+    font-size: large;
+    margin-top: 2%;
+
+}
+
+#availableQuiz {
+  text-align: left;
+  margin-left: 4%;
+}
+
+#quizInfo {
+  font-size: larger;
+}
+
+#subheader {
+  font-size: medium;
+  color: grey;
+  position: relative;
+  bottom: -20px;
+}
+
+#startBtn {
+  margin: auto;
+}
+
+.mcqReview {
+  margin-right: 1% !important;
+  margin-bottom: 1% !important;
+
+}
+
+#chatName {
+  position: relative;
+  top: -50px;
+  margin-left: 40%;
+}

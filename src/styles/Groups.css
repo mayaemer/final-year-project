@@ -1,83 +1,97 @@
-body{
-    background-color: #F8F8F8 !important;
+body {
+  background-color: #f8f8f8 !important;
 }
 
-#formBtn{
-    margin-left: 90%;
-    float: right;
+#welcome {
+  position: relative;
+  top: 50px;
+}
+
+#welcomeText {
+    margin-left: 17%;
+}
+
+.home {
+    position: relative;
+    top: 10px;
+}
+
+#formBtn {
+  margin-left: 90%;
+  float: right;
 }
 
 #groupsCard {
-    display: block;
-    width: 70%;
-    margin: auto;
-    margin-top: 2%;
-    padding: 20px;
+  display: block;
+  width: 70%;
+  margin: auto;
+  margin-top: 2%;
+  padding: 20px;
 }
 
 #createForm {
-    display: block;
-    width: 70%;
-    margin: 50px;
-    padding: 20px;}
+  display: block;
+  width: 70%;
+  margin: 50px;
+  padding: 20px;
+}
 
 #groupImage {
-    width: 100%;
-    height: 75%;
-    border-radius: 3px 3px 0 0;
+  width: 100%;
+  height: 75%;
+  border-radius: 3px 3px 0 0;
 }
 
 #groupPaper {
-    width: 90%;
-    height: 200px;
-} 
-
-#imageSelection{
-    width: 60%;
-    margin: auto;
+  width: 90%;
+  height: 200px;
 }
 
-.form{
-    width:50%;
+#imageSelection {
+  width: 60%;
+  margin: auto;
 }
 
-.selectedImg{
-    width: 60% !important;
-    margin: auto;
-    margin-top: 1%;
-    margin-bottom: 1%;
-
+.form {
+  width: 50%;
 }
 
-#invalid{
-    width: 50%;
-    margin: auto;    
+.selectedImg {
+  width: 60% !important;
+  margin: auto;
+  margin-top: 1%;
+  margin-bottom: 1%;
+}
+
+#invalid {
+  width: 50%;
+  margin: auto;
 }
 
 #resultAlert {
-    width: 60%;
-    margin: auto;
+  width: 60%;
+  margin: auto;
 }
 
-#resultText{
-    margin: auto;
-    text-align: center;
+#resultText {
+  margin: auto;
+  text-align: center;
 }
 
-#searchBar{
-    margin: auto;
-    width: 50%;
-    margin-top: 2%;
+#searchBar {
+  margin: auto;
+  width: 50%;
+  margin-top: 2%;
 }
 
-#head  {
-    margin-top: 2%;
+#head {
+  margin-top: 2%;
 }
 
 #pagination {
-    margin: auto;
+  margin: auto;
 }
 
 #messageBtn {
-    margin-top: 1%;
+  margin-top: 1%;
 }

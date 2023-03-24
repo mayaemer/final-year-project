@@ -1,11 +1,12 @@
 import { useState } from "react";
 import Card from "@mui/material/Card";
-import { TextField } from "@mui/material";
+import { Button, Grid, TextField } from "@mui/material";
 import MenuItem from "@mui/material/MenuItem";
 import Alert from "@mui/material/Alert";
 import Axios from "axios";
 import { Link } from "react-router-dom";
 import { registrationSchema } from "../Validations/Validation";
+import "../styles/register.css";
 
 // this page is empty at this point
 function Register() {
@@ -51,6 +52,14 @@ function Register() {
           function (res) {
             if (res.data.message == "Success") {
               setSuccessVisibility(true);
+              setErrorVisibility(false);
+
+              setEmail("");
+              setFirstName("");
+              setSurName("");
+              setPassword("");
+              setConfirmPassword("");
+              setUserType("");
             } else {
               setErrorVisibility(true);
               setErrorMessage(res.data.message);
@@ -61,74 +70,106 @@ function Register() {
         console.error(e);
       }
     } else {
-      setErrorVisibility(true)
+      setErrorVisibility(true);
       setErrorMessage("Data not valid");
     }
   };
 
   return (
-    <div>
-      <Card variant="outlined">
-        <form onSubmit={(e) => handleSubmit(e)}>
-          <TextField
-            id="outlined-basic"
-            label="Email"
-            variant="outlined"
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <TextField
-            id="outlined-basic"
-            label="First Name"
-            variant="outlined"
-            onChange={(e) => setFirstName(e.target.value)}
-          />
-          <TextField
-            id="outlined-basic"
-            label="Surname"
-            variant="outlined"
-            onChange={(e) => setSurName(e.target.value)}
-          />
-          <TextField
-            id="outlined-password-input"
-            label="Password"
-            type="password"
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <TextField
-            id="outlined-password-input"
-            label="Confirm Password"
-            type="password"
-            onChange={(e) => setConfirmPassword(e.target.value)}
-          />
-          <TextField
-            id="outlined-select-usertype"
-            select
-            label="Select"
-            defaultValue=""
-            helperText="Please select your user type"
-            onChange={(e) => setUserType(e.target.value)}
-          >
-            {usertype.map((user) => (
-              <MenuItem key={user.value} value={user.value}>
-                {user.label}
-              </MenuItem>
-            ))}
-          </TextField>
-          <button type="submit">Register</button>
-          {successVisbility && (
-            <Alert severity="success">
-              Registration successful.
-              <Link to="/">Go to login page</Link>
-            </Alert>
-          )}
-          {errorVisbility && (
-            <Alert severity="error">
-              {errorMessage}
-            </Alert>
-          )}
-        </form>
-      </Card>
-    </div>
+    <Grid container spacing={2}>
+      <Grid item lg={12} md={12} xs={12}>
+        <Card variant="outlined" id="groupCard">
+          <h4>Create an account</h4>
+          <form onSubmit={(e) => handleSubmit(e)}>
+            <Grid item lg={12} md={12} xs={12} id="input">
+              <TextField
+                id="outlined-basic"
+                label="First Name"
+                variant="outlined"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+              />
+            </Grid>
+
+            <Grid item lg={12} md={12} xs={12} id="input">
+              <TextField
+                id="outlined-basic"
+                label="Surname"
+                variant="outlined"
+                value={surName}
+                onChange={(e) => setSurName(e.target.value)}
+              />
+            </Grid>
+            <Grid item lg={12} md={12} xs={12} id="input">
+              <TextField
+                id="outlined-basic"
+                label="Email"
+                variant="outlined"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </Grid>
+            <Grid item lg={12} md={12} xs={12} id="input">
+              <TextField
+                id="outlined-password-input"
+                label="Password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </Grid>
+
+            <Grid item lg={12} md={12} xs={12} id="input">
+              <TextField
+                id="outlined-password-input"
+                label="Confirm Password"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+            </Grid>
+
+            <Grid item lg={12} md={12} xs={12} id="input">
+              <TextField
+                id="outlined-select-usertype"
+                select
+                label="Select"
+                defaultValue=""
+                value={userType}
+                helperText="Please select your user type"
+                onChange={(e) => setUserType(e.target.value)}
+              >
+                {usertype.map((user) => (
+                  <MenuItem key={user.value} value={user.value}>
+                    {user.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+
+            <Button type="submit" variant="outlined" id="input">
+              Register
+            </Button>
+            <Grid>
+              <p>
+                Already have an account? <Link to="/">Login here</Link>
+              </p>
+            </Grid>
+            {successVisbility && (
+              <Alert severity="success" id="alert">
+                Registration successful.
+                <Link to="/">Go to login page</Link>
+              </Alert>
+            )}
+            {errorVisbility && (
+              <Alert severity="error" id="alert">
+                {errorMessage}
+              </Alert>
+            )}
+          </form>
+        </Card>
+      </Grid>
+    </Grid>
   );
 }
 

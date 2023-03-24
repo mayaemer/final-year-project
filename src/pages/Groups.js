@@ -294,7 +294,11 @@ function Groups() {
     <div>
       <NavBar></NavBar>
       <Grid lg={12} item container spacing={2}>
-        <Grid item lg={10} md={10} xs={10}></Grid>
+        <Grid item lg={10} md={10} xs={10} id="welcome">
+          {groupSection && (
+            <h2 id="welcomeText">Welcome {currentUser.fname}!</h2>
+          )}
+        </Grid>
         <Grid item lg={2} md={2} xs={2} id="messageBtn">
           <MessageButton
             currentUser={currentUser}
@@ -304,7 +308,7 @@ function Groups() {
         </Grid>
       </Grid>
       {groupSection && (
-        <Card id="groupsCard">
+        <Card id="groupsCard" className="home">
           <Grid lg={12} item container spacing={2}>
             <Grid item lg={12} md={12} xs={12}>
               {buttonVisibility && (

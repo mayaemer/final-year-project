@@ -7,7 +7,7 @@ import AddIcon from "@mui/icons-material/Add";
 import Delete from "@mui/icons-material/Delete";
 import IconButton from "@mui/material/IconButton";
 import BackButton from "../components/BackButton";
-import { TextField } from "@mui/material";
+import { Alert, TextField } from "@mui/material";
 import "../styles/Quiz.css";
 import Card from "@mui/material/Card";
 import MenuItem from "@mui/material/MenuItem";
@@ -20,6 +20,10 @@ import Grid from "@mui/material/Grid";
 import Table from "react-bootstrap/Table";
 import { Link } from "react-router-dom";
 import Checkbox from "@mui/material/Checkbox";
+import {
+  createQuizInfoSchema,
+  createQuizSchema,
+} from "../Validations/Validation";
 
 function Quiz() {
   Axios.defaults.withCredentials = true;
@@ -61,6 +65,8 @@ function Quiz() {
     mcqEdit: false,
     mcqCreate: false,
     textBtns: false,
+    validationError: false,
+    validationErrorMsg: "",
   });
 
   const [currentQuestion, setCurrentQuestion] = useState(1);
@@ -97,9 +103,6 @@ function Quiz() {
     answer: "",
     correct: false,
   });
-  const [answerB, setAnswerB] = useState("");
-  const [answerC, setAnswerC] = useState("");
-  const [answerD, setAnswerD] = useState("");
 
   const quizOptions = [
     {
@@ -197,6 +200,7 @@ function Quiz() {
       tf: false,
       mcqCreate: false,
       mcqEdit: false,
+      validationError: false,
     });
     setButtonVisibility({
       ...buttonVisibility,
@@ -276,25 +280,53 @@ function Quiz() {
     }
   };
 
-  const handleNext = (e) => {
+  const handleNext = async (e) => {
     e.preventDefault();
-    if (quizType === "MCQ") {
-      setCreateForm({
-        ...createForm,
-        first: false,
-        mcq: true,
-        mcqCreate: true,
-      });
-    } else if (quizType === "Text") {
-      setCreateForm({
-        ...createForm,
-        first: false,
-        text: true,
-        textBtns: true,
-      });
+
+    const validateData = {
+      title: quizTitle,
+      type: quizType,
+      start: startDate,
+      end: endDate,
+    };
+
+    const validate = await createQuizInfoSchema.isValid(validateData);
+
+    if (validate === true) {
+      if (new Date(startDate) < new Date(endDate)) {
+        if (quizType === "MCQ") {
+          setCreateForm({
+            ...createForm,
+            first: false,
+            mcq: true,
+            mcqCreate: true,
+            validationError: false,
+          });
+        } else if (quizType === "Text") {
+          setCreateForm({
+            ...createForm,
+            first: false,
+            text: true,
+            textBtns: true,
+            validationError: false,
+          });
+        }
+      } else {
+        setCreateForm({
+          ...createForm,
+          validationError: true,
+          validationErrorMsg:
+            "Invalid input. End date must be after start date.",
+        });
+      }
     } else {
-      console.error("Error");
+      setCreateForm({
+        ...createForm,
+        validationError: true,
+        validationErrorMsg: "All fields are required.",
+      });
     }
+
     setButtonVisibility({
       add: false,
     });
@@ -309,6 +341,7 @@ function Quiz() {
         ...createForm,
         edit: false,
         mcqCreate: true,
+        validationError: false,
       });
     }
     if (quizType === "Text") {
@@ -316,6 +349,7 @@ function Quiz() {
         ...createForm,
         edit: false,
         text: true,
+        validationError: false,
       });
     }
     setEditQuestion();
@@ -343,6 +377,10 @@ function Quiz() {
       answer: "",
       correct: false,
     });
+  };
+
+  const test = () => {
+    console.log(questionsArray);
   };
 
   const handleQuestionChange = (e) => {
@@ -408,7 +446,7 @@ function Quiz() {
             correct: true,
           });
         }
-      } else if(answerToSet.correct === true){
+      } else if (answerToSet.correct === true) {
         answerToSet.correct = false;
         if (answerOption === "a") {
           setAnswerValA({
@@ -485,35 +523,49 @@ function Quiz() {
     }
   };
 
-  const saveQuestion = (id) => {
-    const setMcqQuestion = quizToCreate.find((q) => q.id === id);
-    if (setMcqQuestion != undefined) {
-      setMcqQuestion.question = question;
-      setMcqQuestion.answers = answers;
-      setCreateForm({
-        ...createForm,
-        mcqCreate: false,
-        text: false
-      })
-      resetQAstates();
+  const saveQuestion = async (id) => {
+    const validateData = {
+      question: question,
+      answers: answers,
+    };
+
+    const validate = await createQuizSchema.isValid(validateData);
+
+    if (validate === true) {
+      const setMcqQuestion = quizToCreate.find((q) => q.id === id);
+      if (setMcqQuestion != undefined) {
+        setMcqQuestion.question = question;
+        setMcqQuestion.answers = answers;
+        setCreateForm({
+          ...createForm,
+          mcqCreate: false,
+          text: false,
+        });
+        resetQAstates();
+      } else {
+        setQuizToCreate([
+          ...quizToCreate,
+          {
+            id: id,
+            question: question,
+            answers: answers,
+          },
+        ]);
+        setCreateForm({
+          ...createForm,
+          mcqCreate: false,
+          text: false,
+        });
+        resetQAstates();
+      }
     } else {
-      setQuizToCreate([
-        ...quizToCreate,
-        {
-          id: id,
-          question: question,
-          answers: answers,
-        },
-      ]);
       setCreateForm({
         ...createForm,
-        mcqCreate: false,
-        text: false
-      })
-      resetQAstates();
+        validationErrorMsg: "Invalid input. Questions cannot be empty.",
+        validationError: true,
+      });
     }
   };
-
 
   const saveEdit = () => {
     const setQuestion = quizToCreate.find((q) => q.id === editQuestion.id);
@@ -682,18 +734,11 @@ function Quiz() {
     }, []);
   }, []);
 
-  const test = () => {
-    console.log(questionsArray);
-    console.log(quizToCreate);
-  };
-
   return (
     <Grid>
       <Grid id="groupTitle">
         <h1 id="groupHeader">{groupInfo.groupName}</h1>
       </Grid>
-
-      <button onClick={test}>Test</button>
 
       {quizDisplay.main && (
         <Card id="groupCard">
@@ -793,10 +838,12 @@ function Quiz() {
       )}
 
       {createForm.loading && (
-        <div>
-          <p>Creating quiz..</p>
-          <Spinner></Spinner>
-        </div>
+        <Card id='groupCard'>
+          <Grid item lg={12} md={12} xs={12}>
+            <p>Creating quiz..</p>
+            <Spinner></Spinner>
+          </Grid>
+        </Card>
       )}
 
       {createForm.main && (
@@ -858,6 +905,13 @@ function Quiz() {
                       }}
                     />
                   </Grid>
+                  {createForm.validationError && (
+                    <Grid item lg={5} md={5} xs={5} id="errorMsg">
+                      <Alert severity="error">
+                        {createForm.validationErrorMsg}
+                      </Alert>
+                    </Grid>
+                  )}
                   <Button variant="outlined" type="submit">
                     Next
                   </Button>
@@ -959,14 +1013,6 @@ function Quiz() {
                   <Grid lg={12} md={12} xs={12}>
                     <p>Question {currentQuestion}</p>
                   </Grid>
-                  <Grid lg={12} md={12} xs={12}>
-                    <Button onClick={addQuestion}>
-                      <AddIcon />
-                    </Button>
-                    <Button>
-                      <SettingsIcon />
-                    </Button>
-                  </Grid>
                   <Grid lg={12} md={12} xs={12} id="textBox">
                     <TextField
                       sx={{
@@ -979,7 +1025,21 @@ function Quiz() {
                       onChange={handleQuestionChange}
                     />
                   </Grid>
-                  <Button variant='outlined' onClick={() => saveQuestion(currentQuestion)}>Save Question</Button>
+                  {createForm.validationError && (
+                    <Grid lg={6} md={6} xs={6} id="errorMsg">
+                      <Alert severity="error">
+                        {createForm.validationErrorMsg}
+                      </Alert>
+                    </Grid>
+                  )}
+                  <Grid lg={12} md={12} xs={12} id="saveBtn">
+                    <Button
+                      variant="outlined"
+                      onClick={() => saveQuestion(currentQuestion)}
+                    >
+                      Save Question
+                    </Button>
+                  </Grid>
                 </form>
                 {/* ))} */}
               </Grid>
@@ -1106,7 +1166,21 @@ function Quiz() {
                       </IconButton>
                     </Grid>
                   )}
-                  <Button variant='outlined' onClick={() => saveQuestion(currentQuestion)}>Save Question</Button>
+                  {createForm.validationError && (
+                    <Grid lg={6} md={6} xs={6} id="errorMsg">
+                      <Alert severity="error">
+                        {createForm.validationErrorMsg}
+                      </Alert>
+                    </Grid>
+                  )}
+                  <Grid lg={12} md={12} xs={12} id="saveBtn">
+                    <Button
+                      variant="outlined"
+                      onClick={() => saveQuestion(currentQuestion)}
+                    >
+                      Save Question
+                    </Button>
+                  </Grid>
                 </form>
                 {/* ))} */}
               </Grid>
