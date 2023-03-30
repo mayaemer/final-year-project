@@ -14,7 +14,7 @@ import {
   postQuestionSchema,
 } from "../Validations/Validation";
 import AddIcon from "@mui/icons-material/Add";
-import { Button, IconButton, TextField } from "@mui/material";
+import { Button, IconButton, Snackbar, TextField } from "@mui/material";
 import Refresh from "../components/Refresh";
 import Alert from "@mui/material/Alert";
 import Dropdown from "react-bootstrap/Dropdown";
@@ -57,7 +57,6 @@ function Questions() {
 
   const [selectedQuestion, setSelectedQuestion] = useState();
 
-  const [editArr, setEditArr] = useState([]);
 
   const getQuestions = (userData) => {
     const data = {
@@ -68,19 +67,7 @@ function Questions() {
         setQuestions(res.data);
         const i = res.data.length - 1;
         setSelectedQuestion(res.data[i]);
-        if (res.data[i]["posterId"] === userData.user._id) {
-          setAddVisible({
-            ...addVisible,
-            op: true,
-            showQuestions: true,
-          });
-        } else {
-          setAddVisible({
-            ...addVisible,
-            op: false,
-            showQuestions: true,
-          });
-        }
+        checkOP(res.data[i]["posterId"], userData.user._id)
       } else if (res.data.length === 0) {
         setAddVisible({
           ...addVisible,
@@ -91,51 +78,20 @@ function Questions() {
     });
   };
 
-  function formatId(email) {
-    let i;
-    let formatEmail = [];
-    let specialCharacters = [
-      "!",
-      '"',
-      "#",
-      "$",
-      "%",
-      "&",
-      "'",
-      "(",
-      ")",
-      "*",
-      "+",
-      ",",
-      ".",
-      "/",
-      ":",
-      ";",
-      "<",
-      "=",
-      ">",
-      "?",
-      "@",
-      "[",
-      "]",
-      "^",
-      "`",
-      "{",
-      "|",
-      "}",
-      "~",
-    ];
-    for (i = 0; i < email.length; i++) {
-      if (specialCharacters.includes(email[i])) {
-        formatEmail.push("\\");
-        formatEmail.push(email[i]);
-      } else {
-        formatEmail.push(email[i]);
-      }
+  const checkOP = (poster, user) => {
+    if (poster === user) {
+      setAddVisible({
+        ...addVisible,
+        op: true,
+        showQuestions: true,
+      });
+    } else {
+      setAddVisible({
+        ...addVisible,
+        op: false,
+        showQuestions: true,
+      });
     }
-
-    const formattedEmail = formatEmail.toString().split(",").join("");
-    return formattedEmail;
   }
 
   const getGroupData = () => {
@@ -147,7 +103,7 @@ function Questions() {
         "background-image",
         "url(" + res.data.image.image + ")"
       );
-      checkUser(res.data.members, res.data.creator);
+      checkUser();
     });
   };
 
@@ -155,10 +111,6 @@ function Questions() {
     Axios.get("http://localhost:3001/check").then((response) => {
       if (response.data.loggedIn === true) {
         setUserInfo(response.data);
-        const email = response.data.user._id;
-        const formattedEmail = formatId(email);
-        const settingsId = "#" + formattedEmail;
-        $(settingsId).show();
         getQuestions(response.data);
       }
     });
@@ -242,7 +194,7 @@ function Questions() {
   const checkProfanity = (data, handleData) => {
     Axios.post("http://localhost:3001/checkProfanity", data)
       .then((result) => {
-        console.log(data)
+        console.log(data);
         if (result.data.includes(1)) {
           //console.log(result);
 
@@ -320,7 +272,6 @@ function Questions() {
   const closeError = () => {
     setAddVisible({
       ...addVisible,
-      questionForm: true,
       validationError: false,
     });
   };
@@ -349,7 +300,6 @@ function Questions() {
   };
 
   const handleProfanity = (profaneData) => {
-
     setAddVisible({
       ...addVisible,
       loading: false,
@@ -394,17 +344,7 @@ function Questions() {
     questions.forEach((question) => {
       if (question._id === selectedItem) {
         setSelectedQuestion(question);
-        if (question.posterId === userInfo.email) {
-          setAddVisible({
-            ...addVisible,
-            op: true,
-          });
-        } else {
-          setAddVisible({
-            ...addVisible,
-            op: false,
-          });
-        }
+        checkOP(question.posterId, userInfo.user._id)
       }
     });
   };
@@ -513,17 +453,6 @@ function Questions() {
                   <h5>Post Question</h5>
                 </Grid>
 
-                {addVisible.validationError && (
-                  <Grid item lg={12} md={12} xs={12} id="validationError">
-                    <Alert severity="error">
-                      Invalid input. All fields are required, maximum of 1000
-                      words.
-                      <Button variant="outlined" onClick={closeError}>
-                        OK
-                      </Button>
-                    </Alert>
-                  </Grid>
-                )}
                 <form onSubmit={submitQuestion}>
                   <Grid item lg={12} md={12} xs={12} id="edititemText">
                     <TextField
@@ -547,7 +476,7 @@ function Questions() {
                   </Grid>
                   <Grid item lg={12} md={12} xs={12}>
                     <Button id="edititem" variant="outlined" type="submit">
-                      Create
+                      Post
                     </Button>
                     <Button
                       id="edititem"
@@ -575,9 +504,6 @@ function Questions() {
                         ></Dropdown.Toggle>
 
                         <Dropdown.Menu>
-                          {/* <Dropdown.Item name={question._id} onClick={handleEdit}>
-                          Edit Post
-                        </Dropdown.Item> */}
                           <Dropdown.Item
                             name={selectedQuestion._id}
                             onClick={handleDelete}
@@ -600,27 +526,6 @@ function Questions() {
                     <p id="questionBody">{selectedQuestion.textBody}</p>
                   </Grid>
                 </Grid>
-                {editArr.includes(selectedQuestion._id) && (
-                  <div id="editForm" class={selectedQuestion._id}>
-                    <form onSubmit={submitQuestion}>
-                      <TextField
-                        id="outlined-multiline-flexible"
-                        multiline
-                        maxRows={4}
-                        defaultValue={selectedQuestion.questionTitle}
-                        onChange={handleChange}
-                      />
-                      <TextField
-                        id="outlined-multiline-flexible"
-                        multiline
-                        maxRows={4}
-                        defaultValue={selectedQuestion.questionBody}
-                        onChange={handleChange}
-                      />
-                      <button type="submit">Save</button>
-                    </form>
-                  </div>
-                )}
 
                 <Grid item lg={12} md={12} xs={12} id="commentSection">
                   <form>
@@ -655,6 +560,15 @@ function Questions() {
                 </Grid>
               </Grid>
             )}
+            <Snackbar
+              open={addVisible.validationError}
+              autoHideDuration={6000}
+              onClose={closeError}
+            >
+              <Alert severity="error" onClick={closeError}>
+                Invalid input. All fields are required, maximum of 1000 words.
+              </Alert>
+            </Snackbar>
           </Grid>
         </Card>
       </Grid>

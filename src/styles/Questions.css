@@ -60,9 +60,13 @@
   color: gray;
 }
 
-#textBody,
 #questionBody {
   font-size: larger;
+}
+
+
+#textBody{
+  font-size: medium;
 }
 
 #questionBody {

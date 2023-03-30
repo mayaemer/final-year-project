@@ -25,7 +25,7 @@ import { Spinner } from "react-bootstrap";
 import Refresh from "../components/Refresh";
 import DocViewer, { DocViewerRenderers } from "@cyntler/react-doc-viewer";
 import CloseIcon from "@mui/icons-material/Close";
-import { Delete, Settings } from "@mui/icons-material";
+import { Delete } from "@mui/icons-material";
 import "../styles/Content.css";
 
 function Content() {
@@ -166,7 +166,6 @@ function Content() {
       showSelectedContent: false,
       showSelectedFile: true,
     });
-    //console.log(selectedContent['files'])
     selectedContent["files"].forEach((file) => {
       if (file["filename"] === selectedFile) {
         setSelectedFile(file);
@@ -238,7 +237,6 @@ function Content() {
 
   const uploadContent = async (e) => {
     const formData = new FormData();
-    //console.log(filesArr.length);
     if (filesArr.length == 0) {
       alert("No files selected. Please select a file to upload.");
     } else {

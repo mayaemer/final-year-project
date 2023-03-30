@@ -1,10 +1,8 @@
 import './App.css';
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Login from "./pages/Login";
-import Register from "./pages/register";
-import FileUpload from './pages/FileUpload';
-import ViewFile from './pages/ViewFile';
-import Groups from './pages/Groups'
+import Register from "./pages/Register";
+import Home from './pages/Home'
 import 'bootstrap/dist/css/bootstrap.min.css';
 import SelectedGroup from './pages/SelectedGroup';
 import Discover from './pages/Discover';
@@ -23,10 +21,9 @@ function App() {
         <Routes>
           <Route path='/' element={<Login />} />
           <Route path='/register' element={<Register />} />
-          <Route path='/group/:selectedGroup' element={<SelectedGroup />}></Route>
-          <Route path='/Home' element={<Groups />} />
+          <Route path='/group/:selectedGroup' element={<SelectedGroup />} />
+          <Route path='/Home' element={<Home />} />
           <Route path='/Content/:groupId' element={<Content />} />
-          <Route path="/file/:selectedFile" element={<ViewFile />} />
           <Route path="/Discover" element={<Discover />} />
           <Route path="/Questions/:groupId" element={<Questions />} />
           <Route path="/Quiz/:groupId" element={<Quiz />} />

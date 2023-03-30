@@ -13,7 +13,6 @@ import Card from "@mui/material/Card";
 import MenuItem from "@mui/material/MenuItem";
 import Button from "@mui/material/Button";
 import RemoveIcon from "@mui/icons-material/Remove";
-import SettingsIcon from "@mui/icons-material/Settings";
 import Spinner from "react-bootstrap/Spinner";
 import Refresh from "../components/Refresh";
 import Grid from "@mui/material/Grid";
@@ -83,7 +82,6 @@ function Quiz() {
     { id: "c", correct: false },
     { id: "d", correct: false },
   ]);
-  // const [correctAnswers, setCorrectAnswers] = useState([]);
   const [editQuestion, setEditQuestion] = useState();
   const [answerInput, setAnswerInput] = useState(["a", "b", "c", "d"]);
   const [deleteQuiz, setDeleteQuiz] = useState();
@@ -144,24 +142,36 @@ function Quiz() {
   const checkCompletionStatus = (data, email) => {
     const quizParticipants = [];
     const quizDataCompletionArr = [];
+
+    // for each quiz object within the data array
     data.forEach((quiz) => {
+
+      // if the length of the results field is no, 
+      // add new field to quiz object usercompletion with completion status
+      // push object to completion array
       if (quiz.results.length === 0) {
         quiz.userCompletion = "Incomplete";
         quizDataCompletionArr.push(quiz);
       } else {
+
+        // otherwise, for each quiz push each user email within the results into an array
         quiz.results.forEach((result) => {
           quizParticipants.push(result.userEmail);
         });
-        if (quizParticipants.includes(email) === true) {
+
+        // check if current users email is included in new array
+        // add new field to quiz object usercompletion with completion status
+      // push object to completion array
+      if (quizParticipants.includes(email) === true) {
           quiz.userCompletion = "Complete";
           quizDataCompletionArr.push(quiz);
         } else {
-          //console.log(quiz);
           quiz.userCompletion = "Incomplete";
           quizDataCompletionArr.push(quiz);
         }
       }
     });
+    console.log(quizDataCompletionArr)
     setQuizArray(quizDataCompletionArr);
     setQuizDisplay({
       ...quizDisplay,
@@ -379,10 +389,6 @@ function Quiz() {
     });
   };
 
-  const test = () => {
-    console.log(questionsArray);
-  };
-
   const handleQuestionChange = (e) => {
     if (e.target.id === "questionText") {
       setQuestion(e.target.value);
@@ -524,6 +530,7 @@ function Quiz() {
   };
 
   const saveQuestion = async (id) => {
+
     const validateData = {
       question: question,
       answers: answers,
@@ -532,10 +539,10 @@ function Quiz() {
     const validate = await createQuizSchema.isValid(validateData);
 
     if (validate === true) {
-      const setMcqQuestion = quizToCreate.find((q) => q.id === id);
-      if (setMcqQuestion != undefined) {
-        setMcqQuestion.question = question;
-        setMcqQuestion.answers = answers;
+      const setQuizQuestion = quizToCreate.find((q) => q.id === id);
+      if (setQuizQuestion != undefined) {
+        setQuizQuestion.question = question;
+        setQuizQuestion.answers = answers;
         setCreateForm({
           ...createForm,
           mcqCreate: false,
@@ -584,6 +591,7 @@ function Quiz() {
         ...createForm,
         edit: false,
         editMcq: false,
+        text: true
       });
       const num = questionsArray.length;
       setCurrentQuestion(num);
@@ -622,7 +630,6 @@ function Quiz() {
   };
 
   const removeAnswer = (e) => {
-    // when not returning id currentTarget
     const answerId = e.currentTarget.id;
     const filtered = answers.filter((ans) => ans.id != answerId);
     setAnswers(filtered);
@@ -631,7 +638,7 @@ function Quiz() {
   };
 
   const saveQuiz = () => {
-    // const correctAnswers = filterUndefined();
+
     const quizdata = {
       title: quizTitle,
       type: quizType,
@@ -639,7 +646,6 @@ function Quiz() {
       end: endDate,
       questions: quizToCreate,
       groupid: groupInfo._id,
-      // correctAns: correctAnswers,
     };
 
     postQuiz(quizdata);
@@ -724,7 +730,6 @@ function Quiz() {
 
         if (!unmounted) {
           getGroupData();
-          //getQuiz();
         }
       }, 0);
 
@@ -926,12 +931,6 @@ function Quiz() {
                     <p>Question {editQuestion.id}</p>
                   </Grid>
                   <Grid lg={12} md={12} xs={12}>
-                    {/* <Button onClick={addQuestion}>
-                      <AddIcon />
-                    </Button>
-                    <Button>
-                      <SettingsIcon />
-                    </Button> */}
                   </Grid>
                   <Grid lg={12} md={12} xs={12} id="textBox">
                     <TextField
@@ -1008,7 +1007,6 @@ function Quiz() {
 
             {createForm.text && (
               <Grid lg={12} md={12} xs={12} className="questionForm">
-                {/* {questionsArray.map((question) => ( */}
                 <form id={currentQuestion} className="questionForm">
                   <Grid lg={12} md={12} xs={12}>
                     <p>Question {currentQuestion}</p>
@@ -1041,21 +1039,16 @@ function Quiz() {
                     </Button>
                   </Grid>
                 </form>
-                {/* ))} */}
               </Grid>
             )}
 
             {createForm.mcqCreate && (
               <Grid lg={12} md={12} xs={12} className="questionForm">
-                {/* {questionsArray.map((question) => ( */}
                 <form id={currentQuestion} className="questionForm">
                   <Grid lg={12} md={12} xs={12}>
                     <p id="qNum">Question {currentQuestion}</p>
                   </Grid>
                   <Grid lg={12} md={12} xs={12}>
-                    {/* <IconButton onClick={addQuestion}>
-                        <AddIcon />
-                      </IconButton> */}
                   </Grid>
                   <Grid lg={12} md={12} xs={12} id="questionForm">
                     <TextField
@@ -1182,7 +1175,6 @@ function Quiz() {
                     </Button>
                   </Grid>
                 </form>
-                {/* ))} */}
               </Grid>
             )}
             {createForm.mcq && (

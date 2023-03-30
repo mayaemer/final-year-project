@@ -39,7 +39,6 @@ function SelectedGroup() {
 
   const navigate = useNavigate();
 
-  const [groupName, setGroupName] = useState("");
   //const [email, setEmail] = useState("");
   const [currentUser, setCurrentUser] = useState({
     email: "",
@@ -79,6 +78,7 @@ function SelectedGroup() {
   const [viewProfanity, setViewProfanity] = useState(false);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [imageURL, setImageURL] = useState("");
 
   Axios.defaults.withCredentials = true;
 
@@ -86,11 +86,7 @@ function SelectedGroup() {
     const data = { ID: selectedGroup };
     Axios.post("http://localhost:3001/groupInfo", data).then((res) => {
       setGroupInfo(res.data);
-      setGroupName(res.data.groupName);
-      $("#groupTitle").css(
-        "background-image",
-        "url(" + res.data.image.image + ")"
-      );
+      setImageURL(res.data.image.image);
       checkUser(res.data.members, res.data.creator);
       countPronfaneOccurances(res.data);
     });
@@ -102,8 +98,12 @@ function SelectedGroup() {
         (member) => member.email === groupInfo.members[i].email
       );
 
-      const occurences = groupInfo.members[i].profanityMonitoring.length;
-      setMember.profanceOccurences = occurences;
+      if (groupInfo.members[i].profanityMonitoring) {
+        const occurences = groupInfo.members[i].profanityMonitoring.length;
+        setMember.profanceOccurences = occurences;
+      } else {
+        setMember.profanceOccurences = 0;
+      }
     }
   };
 
@@ -129,20 +129,17 @@ function SelectedGroup() {
   const checkUser = (members, creator) => {
     Axios.get("http://localhost:3001/check").then((response) => {
       if (response.data.loggedIn === true) {
-        //setEmail(response.data.user._id);
         setCurrentUser({
           email: response.data.user._id,
           fname: response.data.user.Fname,
           sname: response.data.user.Sname,
         });
-        //console.log(response.data.user)
         const user = response.data.user._id;
 
         const membersArr = [];
         members.forEach((member) => {
           membersArr.push(member.email);
         });
-
         if (membersArr.includes(user)) {
           setMembersView(true);
           setPublicView(false);
@@ -304,8 +301,9 @@ function SelectedGroup() {
         if (res.data.message) {
           setPassErrorMessage(res.data.message);
           setShowError(true);
+        } else {
+          Refresh();
         }
-        Refresh();
       })
       .catch((e) => console.log(e));
   };
@@ -365,8 +363,11 @@ function SelectedGroup() {
 
   return (
     <div>
-      <div id="groupTitle">
-        <h1 id="groupHeader">{groupName}</h1>
+      <div
+        id="groupTitle"
+        style={{ backgroundImage: `url("` + imageURL + `")` }}
+      >
+        <h1 id="groupHeader">{groupInfo.groupName}</h1>
       </div>
 
       {membersView && (
@@ -396,17 +397,6 @@ function SelectedGroup() {
                     </Paper>
                   </Link>
                 </Grid>
-                {/* <Grid item lg={3} md={3} xs={6}>
-                  <Link to={"/polls"} id="pollsLink">
-                    <Paper id="paperOption">
-                      <img
-                        id="paperImage"
-                        src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRGyea252bkYoYgpPi52T2_kjlNBy5lMjmM-w&usqp=CAU"
-                      />
-                      <p id="paperName">Polls</p>
-                    </Paper>
-                  </Link>
-                </Grid> */}
                 <Grid item lg={4} md={4} xs={6}>
                   <Link to={"/Quiz/" + groupInfo._id} id="quizLink">
                     <Paper id="paperOption">
@@ -719,7 +709,7 @@ function SelectedGroup() {
       {joinForm && (
         <div>
           <Card id="groupCard">
-            <h5>Join {groupName}</h5>
+            <h5>Join {groupInfo.groupName}</h5>
             <hr />
             <form onSubmit={handleSubmit}>
               <Grid item lg={12} md={12} xs={12} id="joinForm">

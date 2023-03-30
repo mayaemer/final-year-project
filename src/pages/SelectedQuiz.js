@@ -161,7 +161,6 @@ function SelectedQuiz() {
     });
     const selectedUser = e.target.id;
     quizData.results.forEach((result) => {
-      //console.log(result[0])
       if (result["userEmail"] === selectedUser) {
         if (quizType.mcq === true) {
           formatMcqAns(result);
@@ -197,15 +196,12 @@ function SelectedQuiz() {
     for (let i = 0; i < quizData.questions.length; i++) {
       const ansObj = {
         questions: quizData.questions[i],
-        //   answers : data[0]["answers"][i]
       };
       ansObjArr.push(ansObj);
     }
-
     for (let i = 0; i < ansObjArr.length; i++) {
       ansObjArr[i].questions.answers = data["answers"][i];
     }
-
     setSelectedUserData({
       userEmail: data["userEmail"],
       userFname: data["userFname"],
@@ -306,7 +302,6 @@ function SelectedQuiz() {
   );
 
   const checkQuizType = (type) => {
-    //console.log(type);
     if (type === "MCQ") {
       setQuizType({
         ...quizType,
@@ -358,7 +353,6 @@ function SelectedQuiz() {
         noParticipants: true,
       });
     }
-    //console.log(participantList);
   };
 
   const checkDateTime = (startDateTime, endDateTime) => {
@@ -410,13 +404,10 @@ function SelectedQuiz() {
         );
         if (setSelected.selected === true) {
           setSelected.selected = false;
-          //console.log(setSelected);
         } else if (setSelected.selected === false) {
           setSelected.selected = true;
-          //console.log(setSelected);
         } else if (setSelected.selected === undefined) {
           setSelected.selected = true;
-          //console.log(setSelected);
         }
       }
     }
@@ -424,7 +415,6 @@ function SelectedQuiz() {
 
   const saveGrade = () => {
     const grade = totalGrade();
-    console.log(console.log(selectedUserData));
 
     const data = {
       qid: quizData._id,
@@ -463,19 +453,14 @@ function SelectedQuiz() {
         }
       }
       for (let i = 0; i < q.answers.length; i++) {
-        if (
-          q.answers[i]["correct"] === true &&
-          q.answers[i]["selected"] === true
-        ) {
+        if (q.answers[i]["correct"] === true &&
+          q.answers[i]["selected"] === true) {
           const markPerAnswer = 1 / numOfCorrect;
           totalMarks += markPerAnswer;
         }
       }
     });
-
-    //console.log(totalMarks)
     const total = 100 * (totalMarks / numQuestions);
-    //console.log(total)
     return total.toFixed(2);
   };
 
@@ -494,7 +479,6 @@ function SelectedQuiz() {
         setAnswer.answer = textAnswer.answer;
       }
     }
-    //setAllAnswers([...allAnswers, completeAnswer]);
   };
 
   const handleTextChange = (e) => {
@@ -504,7 +488,6 @@ function SelectedQuiz() {
       answer: answer,
       qid: qid,
     });
-    //console.log(allAnswers);
   };
 
   const endQuiz = () => {
@@ -654,7 +637,6 @@ function SelectedQuiz() {
         console.log("Data successfully loaded");
 
         if (!unmounted) {
-          //getSelectedQuiz();
           getGroupData();
         }
       }, 0);

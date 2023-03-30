@@ -66,7 +66,7 @@ app.use(
 
 // connect to mongodb
 const uri =
-  "mongodb+srv://mayaeoc:250897@cluster0.suy8qu3.mongodb.net/eLearningDatabase?retryWrites=true&w=majority";
+"mongodb+srv://mayaeoc:250897@cluster0.suy8qu3.mongodb.net/eLearningDatabase?retryWrites=true&w=majority";
 const client = new MongoClient(uri);
 const db = client.db("eLearningDatabase");
 
@@ -152,16 +152,15 @@ function registerUser(res, userData) {
 app.post(
   "/register",
   [
-    body("Email").isLength({ min: 3, max: 50 }).isEmail(),
-    body("Fname").isLength({ max: 100 }),
-    body("Sname").isLength({ max: 100 }),
+    body("Email").isLength({ min: 5, max: 80 }).isEmail(),
+    body("Fname").isLength({ min: 1, max: 100 }),
+    body("Sname").isLength({ min: 1, max: 100 }),
     body("Pass").isLength({ min: 8, max: 50 }),
     body("Confirm").isLength({ min: 8, max: 50 }),
   ],
   (req, res) => {
     const validationErrors = validationResult(req);
     if (!validationErrors.isEmpty()) {
-      console.log(validationErrors);
       res.status(400).json({ errors: validationErrors.array() });
     } else {
       if (req.body.Pass != req.body.Confirm) {
@@ -199,14 +198,6 @@ function continueRegistration(data, hash, res) {
   };
   check(data.Email);
 }
-
-app.get("/authenticate", (req, res) => {
-  if (req.session.user) {
-    res.send({ loggedIn: true });
-  } else {
-    res.send({ loggedIn: false });
-  }
-});
 
 //middleware to check token in valid
 const verifyJWT = (req, res, next) => {
@@ -254,21 +245,22 @@ app.post(
         .then((result) => {
           if (result === null) {
             res.json({ message: "User does not exist." });
+          } else {
+            bcrypt.compare(pass, result.Pass, (err, response) => {
+              if (response) {
+                req.session.user = result;
+                const token = jwt.sign({ email }, "P1n3@ppl322$", {
+                  expiresIn: 86400,
+                });
+                res.json({ auth: true, token: token, result: result });
+              } else {
+                res.json({
+                  auth: false,
+                  message: "Wrong password",
+                });
+              }
+            });
           }
-          bcrypt.compare(pass, result.Pass, (err, response) => {
-            if (response) {
-              req.session.user = result;
-              const token = jwt.sign({ email }, "P1n3@ppl322$", {
-                expiresIn: 86400,
-              });
-              res.json({ auth: true, token: token, result: result });
-            } else {
-              res.json({
-                auth: false,
-                message: "Wrong password",
-              });
-            }
-          });
         })
         .catch((err) => {
           res.send(err);
@@ -340,37 +332,43 @@ app.post(
     body("Confirm").isLength({ min: 8, max: 50 }),
   ],
   (req, res) => {
-    const creator = req.body.creator;
-    const gName = req.body.GroupName;
-    const pass = req.body.Password;
-    const confirm = req.body.Confirm;
-    const gimage = req.body.Image;
-    const description = req.body.description;
-
     const validationErrors = validationResult(req);
     if (!validationErrors.isEmpty()) {
       console.log(validationErrors);
       res.status(400).json({ errors: validationErrors.array() });
-    }
-    if (pass === confirm) {
-      bcrypt.hash(pass, saltRounds, (err, hash) => {
-        if (err) {
-          console.log(err);
-        } else {
-          groupData = {
-            groupName: gName,
-            password: hash,
-            creator: creator,
-            description: description,
-            members: [],
-            image: gimage,
-          };
-
-          insertData(res, "groups", groupData);
-        }
-      });
     } else {
-      res.send("Passwords do not match.");
+      const creator = req.body.creator;
+      const gName = req.body.GroupName;
+      const pass = req.body.Password;
+      const confirm = req.body.Confirm;
+      const gimage = req.body.Image;
+      const description = req.body.description;
+
+      const validationErrors = validationResult(req);
+      if (!validationErrors.isEmpty()) {
+        console.log(validationErrors);
+        res.status(400).json({ errors: validationErrors.array() });
+      }
+      if (pass === confirm) {
+        bcrypt.hash(pass, saltRounds, (err, hash) => {
+          if (err) {
+            console.log(err);
+          } else {
+            groupData = {
+              groupName: gName,
+              password: hash,
+              creator: creator,
+              description: description,
+              members: [],
+              image: gimage,
+            };
+
+            insertData(res, "groups", groupData);
+          }
+        });
+      } else {
+        res.send("Passwords do not match.");
+      }
     }
   }
 );
@@ -419,41 +417,62 @@ app.get("/getGroups", (req, res) => {
     });
 });
 
-app.post("/searchGroups", (req, res) => {
-  const searchId = req.body.searchData;
-  const matchingGroups = [];
+app.post(
+  "/searchGroups",
+  [body("searchData").isLength({ min: 0, max: 100 })],
+  (req, res) => {
+    const validationErrors = validationResult(req);
+    if (!validationErrors.isEmpty()) {
+      console.log(validationErrors);
+      res.status(400).json({ errors: validationErrors.array() });
+    } else {
+      const searchId = req.body.searchData;
+      const matchingGroups = [];
 
-  db.collection("groups")
-    .find()
-    .toArray(function (err, result) {
-      if (err) console.log(err);
-      result.forEach((group) => {
-        if (group._id.toString().includes(searchId) === true) {
-          matchingGroups.push(group);
-        }
-      });
-      res.send(matchingGroups);
-    });
-});
+      db.collection("groups")
+        .find()
+        .toArray(function (err, result) {
+          if (err) console.log(err);
+          result.forEach((group) => {
+            if (group._id.toString().includes(searchId) === true) {
+              matchingGroups.push(group);
+            }
+          });
+          res.send(matchingGroups);
+        });
+    }
+  }
+);
 
 // endpoint to join group
-app.post("/joinGroup", (req, res) => {
-  const id = ObjectId(req.body.group);
+app.post(
+  "/joinGroup",
+  [body("password").isLength({ min: 1, max: 100 })],
+  (req, res) => {
+    const id = ObjectId(req.body.group);
 
-  db.collection("groups")
-    .findOne({ _id: id })
-    .then((result) => {
-      bcrypt.compare(req.body.password, result.password, (err, response) => {
-        if (response === true) {
-          addMember(req.body.user, id, res);
-        } else {
-          console.error(err);
-          res.send({ message: "Incorrect password." });
-        }
-      });
-    })
-    .catch((e) => console.log(e));
-});
+    const userData = {
+      email: req.body.user.email,
+      fname: req.body.user.fname,
+      sname: req.body.user.sname,
+      profanityMonitoring: [],
+    };
+
+    db.collection("groups")
+      .findOne({ _id: id })
+      .then((result) => {
+        bcrypt.compare(req.body.password, result.password, (err, response) => {
+          if (response === true) {
+            addMember(userData, id, res);
+          } else {
+            console.error(err);
+            res.send({ message: "Incorrect password." });
+          }
+        });
+      })
+      .catch((e) => console.log(e));
+  }
+);
 
 function addMember(user, group, res) {
   db.collection("groups")
@@ -463,26 +482,36 @@ function addMember(user, group, res) {
 }
 
 // endpoint to delete group
-app.post("/deleteGroup", (req, res) => {
-  const groupId = req.body.ID;
-  const id = ObjectId(req.body.ID);
-  const pass = req.body.Pass;
+app.post(
+  "/deleteGroup",
+  [body("Pass").isLength({ min: 0, max: 100 })],
+  (req, res) => {
+    const validationErrors = validationResult(req);
+    if (!validationErrors.isEmpty()) {
+      console.log(validationErrors);
+      res.status(400).json({ errors: validationErrors.array() });
+    } else {
+      const groupId = req.body.ID;
+      const id = ObjectId(req.body.ID);
+      const pass = req.body.Pass;
 
-  db.collection("groups")
-    .findOne({ _id: id })
-    .then((result) => {
-      bcrypt.compare(pass, result.password, (err, response) => {
-        if (response) {
-          performDelete(id, groupId)
-            .then((result) => res.send(result))
-            .catch((e) => console.log(e));
-        } else {
-          res.send(err);
-        }
-      });
-    })
-    .catch((e) => console.error(e));
-});
+      db.collection("groups")
+        .findOne({ _id: id })
+        .then((result) => {
+          bcrypt.compare(pass, result.password, (err, response) => {
+            if (response) {
+              performDelete(id, groupId)
+                .then((result) => res.send(result))
+                .catch((e) => console.log(e));
+            } else {
+              res.send(err);
+            }
+          });
+        })
+        .catch((e) => console.error(e));
+    }
+  }
+);
 
 async function performDelete(id, groupId) {
   try {
@@ -501,26 +530,39 @@ app.post("/deleteQuiz", (req, res) => {
   deleteItem(res, "quiz", id);
 });
 
-app.post("/checkProfanity", async (req, res) => {
-  const body = req.body.textBody;
-  const title = req.body.title;
-  
-  if (profanityCheck.check(body) === false) {
-    if (title === undefined) {
-      pyProfanityCheck(res, body);
+app.post(
+  "/checkProfanity",
+  [
+    body("textBody").isLength({ min: 0, max: 200 }),
+    body("title").isLength({ min: 0, max: 200 }),
+  ],
+  async (req, res) => {
+    const validationErrors = validationResult(req);
+    if (!validationErrors.isEmpty()) {
+      console.log(validationErrors);
+      res.status(400).json({ errors: validationErrors.array() });
     } else {
-      if (profanityCheck.check(title) === true) {
+      const body = req.body.textBody;
+      const title = req.body.title;
+
+      if (profanityCheck.check(body) === false) {
+        if (title === undefined) {
+          pyProfanityCheck(res, body);
+        } else {
+          if (profanityCheck.check(title) === true) {
+            const data = [1];
+            res.send(data);
+          } else if (profanityCheck.check(title) === false) {
+            pyProfanityCheck(res, title, body);
+          }
+        }
+      } else {
         const data = [1];
         res.send(data);
-      } else if(profanityCheck.check(title) === false) {
-        pyProfanityCheck(res, title, body);
       }
     }
-  } else {
-    const data = [1];
-    res.send(data);
   }
-});
+);
 
 app.post("/handleProfanity", (req, res) => {
   const userEmail = req.body.authorEmail;
@@ -536,34 +578,57 @@ app.post("/handleProfanity", (req, res) => {
   updateProfanity(res, "groups", groupid, userEmail, profaneInfo);
 });
 
-app.post("/postQuestion", (req, res) => {
-  const currDateTime = getCurrentDateTime();
+app.post(
+  "/postQuestion",
+  [
+    body("textBody").isLength({ min: 0, max: 200 }),
+    body("title").isLength({ min: 0, max: 200 }),
+  ],
+  (req, res) => {
+    const validationErrors = validationResult(req);
+    if (!validationErrors.isEmpty()) {
+      console.log(validationErrors);
+      res.status(400).json({ errors: validationErrors.array() });
+    } else {
+      const currDateTime = getCurrentDateTime();
 
-  const questionData = {
-    title: req.body.title,
-    textBody: req.body.textBody,
-    poster: req.body.author,
-    posterId: req.body.authorEmail,
-    dateTime: currDateTime,
-    group: req.body.group,
-    comments: [],
-  };
-  insertData(res, "questions", questionData);
-});
+      const questionData = {
+        title: req.body.title,
+        textBody: req.body.textBody,
+        poster: req.body.author,
+        posterId: req.body.authorEmail,
+        dateTime: currDateTime,
+        group: req.body.group,
+        comments: [],
+      };
+      insertData(res, "questions", questionData);
+    }
+  }
+);
 
-app.post("/postComment", (req, res) => {
-  const currDateTime = getCurrentDateTime();
-  const qid = req.body.question;
+app.post(
+  "/postComment",
+  [body("textBody").isLength({ min: 1, max: 200 })],
+  (req, res) => {
+    const validationErrors = validationResult(req);
+    if (!validationErrors.isEmpty()) {
+      console.log(validationErrors);
+      res.status(400).json({ errors: validationErrors.array() });
+    } else {
+      const currDateTime = getCurrentDateTime();
+      const qid = req.body.question;
 
-  const commentData = [
-    req.body.textBody,
-    req.body.author,
-    req.body.authorEmail,
-    currDateTime,
-    req.body.group,
-  ];
-  updateOneComment(res, "questions", qid, commentData);
-});
+      const commentData = [
+        req.body.textBody,
+        req.body.author,
+        req.body.authorEmail,
+        currDateTime,
+        req.body.group,
+      ];
+      updateOneComment(res, "questions", qid, commentData);
+    }
+  }
+);
 
 app.post("/getQuestions", (req, res) => {
   const groupId = req.body.ID;
@@ -580,19 +645,35 @@ app.post("/deleteQuestion", (req, res) => {
   deleteItem(res, "questions", questionID);
 });
 
-app.post("/createQuiz", (req, res) => {
-  const quizdata = {
-    title: req.body.title,
-    type: req.body.type,
-    start: req.body.start,
-    end: req.body.end,
-    questions: req.body.questions,
-    group: req.body.groupid,
-    results: [],
-  };
+app.post(
+  "/createQuiz",
+  [
+    body("title").isLength({ min: 0, max: 200 }),
+    body("type").notEmpty(),
+    body("start").notEmpty(),
+    body("end").notEmpty(),
+    body("questions").notEmpty(),
+  ],
+  (req, res) => {
+    const validationErrors = validationResult(req);
+    if (!validationErrors.isEmpty()) {
+      console.log(validationErrors);
+      res.status(400).json({ errors: validationErrors.array() });
+    } else {
+      const quizdata = {
+        title: req.body.title,
+        type: req.body.type,
+        start: req.body.start,
+        end: req.body.end,
+        questions: req.body.questions,
+        group: req.body.groupid,
+        results: [],
+      };
 
-  insertData(res, "quiz", quizdata);
-});
+      insertData(res, "quiz", quizdata);
+    }
+  }
+);
 
 app.post("/getQuiz", (req, res) => {
   const groupid = req.body.ID;
@@ -608,8 +689,6 @@ app.post("/updateGrade", (req, res) => {
   const quizid = ObjectId(req.body.qid);
   const uid = req.body.uid;
   const grade = req.body.grade;
-  console.log(quizid);
-  console.log(uid);
   updateGrade(quizid, "quiz", uid, grade, res);
 });
 
@@ -627,18 +706,15 @@ function updateGrade(qid, collection, uid, grade, res) {
   }
 }
 
-app.post('/releaseResults', (req, res) => {
+app.post("/releaseResults", (req, res) => {
   const quizid = ObjectId(req.body.ID);
   updateRelease(res, quizid);
-})
+});
 
 function updateRelease(res, qid) {
   try {
-    db.collection('quiz')
-      .updateOne(
-        { _id: qid },
-        { $set: { releaseResults : true } }
-      )
+    db.collection("quiz")
+      .updateOne({ _id: qid }, { $set: { releaseResults: true } })
       .then((result) => res.send(result))
       .catch((e) => console.log(e));
   } catch (e) {
@@ -651,7 +727,7 @@ app.post("/getContent", (req, res) => {
   findMany(res, "fileuploads", groupid);
 });
 
-app.post("/sendAnswers", (req, res) => {
+app.post("/sendAnswers", [body("answers").notEmpty()], (req, res) => {
   const qid = ObjectId(req.body.quiz);
 
   const answersData = {
@@ -665,7 +741,7 @@ app.post("/sendAnswers", (req, res) => {
   updateQuiz(res, "quiz", qid, answersData);
 });
 
-app.post("/getChats", (req, res) => {
+app.post("/getAllChats", (req, res) => {
   const participantId = req.body.userid;
   //console.log(participantId)
   //console.log(req.body)
@@ -686,27 +762,40 @@ app.post("/createChat", (req, res) => {
   insertData(res, "chats", chatData);
 });
 
-app.post("/sendMessage", (req, res) => {
-  const date = new Date();
-  const messageData = {
-    _id: ObjectId,
-    sender: req.body.sender,
-    receiver: req.body.receiver,
-    message: req.body.textBody,
-    date:
-      date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate(),
-    time: date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds(),
-  };
-  const chat = ObjectId(req.body.chat);
-  sendMessage(chat, messageData, res);
+app.post(
+  "/sendMessage",
+  [body("textBody").isLength({ min: 0, max: 500 })],
+  (req, res) => {
+    const validationErrors = validationResult(req);
+    if (!validationErrors.isEmpty()) {
+      res.status(400).json({ errors: validationErrors.array() });
+    } else {
+      const date = new Date();
+      const messageData = {
+        _id: ObjectId,
+        sender: req.body.sender,
+        receiver: req.body.receiver,
+        message: req.body.textBody,
+        date:
+          date.getFullYear() +
+          "-" +
+          (date.getMonth() + 1) +
+          "-" +
+          date.getDate(),
+        time:
+          date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds(),
+      };
+      const chat = ObjectId(req.body.chat);
+      sendMessage(chat, messageData, res);
+    }
+  }
+);
+
+app.post("/getCurrentChat", (req, res) => {
+  const chatId = ObjectId(req.body.chatid);
+
+  findSingle(res, "chats", chatId);
 });
-
-app.post('/getChat', (req, res) => {
-  const chatId = ObjectId(req.body.chatid)
-
-  findSingle(res, 'chats', chatId)
-})
-
 
 function findAllChats(res, collection, email) {
   try {
@@ -723,10 +812,14 @@ function findAllChats(res, collection, email) {
 }
 
 function sendMessage(chat, message, res) {
-  db.collection("chats")
-    .updateOne({ _id: chat }, { $push: { messages: message } })
-    .then((data) => res.send(data))
-    .catch((e) => res.send(e));
+  try {
+    db.collection("chats")
+      .updateOne({ _id: chat }, { $push: { messages: message } })
+      .then((data) => res.send(data))
+      .catch((e) => res.send(e));
+  } catch (e) {
+    res.send(e);
+  }
 }
 
 function pyProfanityCheck(res, title, body) {

@@ -1,5 +1,3 @@
-import Axios from "axios";
-
 export default function formatItem(data) {
     let i;
     let formatData = [];

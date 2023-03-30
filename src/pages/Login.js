@@ -16,7 +16,6 @@ function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const [alert, setAlert] = useState("");
   const [error, setError] = useState(false);
 
   Axios.defaults.withCredentials = true;
@@ -54,6 +53,7 @@ function Login() {
         ) {
           if (!res.data.auth) {
             setErrorMessage(res.data.message);
+            setError(true);
           } else {
             localStorage.setItem("token", res.data.token);
             Refresh();
@@ -64,7 +64,7 @@ function Login() {
       }
     } else {
       setErrorMessage("Data not valid");
-      setError(true)
+      setError(true);
     }
   };
 
@@ -76,7 +76,7 @@ function Login() {
           <form onSubmit={(e) => handleSubmit(e)}>
             <Grid item lg={12} md={12} xs={12} id="input">
               <TextField
-                id="outlined-basic"
+                id="email-login"
                 label="Email"
                 variant="outlined"
                 onChange={(e) => setEmail(e.target.value)}
@@ -84,7 +84,7 @@ function Login() {
             </Grid>
             <Grid item lg={12} md={12} xs={12} id="input">
               <TextField
-                id="outlined-password-input"
+                id="password-login"
                 label="Password"
                 type="password"
                 onChange={(e) => setPassword(e.target.value)}
@@ -95,7 +95,11 @@ function Login() {
               Login
             </Button>
           </form>
-          {error && <Alert severity="error" id='alertInput'>{errorMessage}</Alert>}
+          {error && (
+            <Alert severity="error" id="alertInput">
+              {errorMessage}
+            </Alert>
+          )}
           <div id="registerSection">
             <p>
               Dont have an account?{" "}

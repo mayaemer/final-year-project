@@ -6,14 +6,18 @@ export const registrationSchema = yup.object().shape({
   Sname: yup.string().required(),
   Pass: yup
     .string()
-    .min(8)
     .max(50)
-    .required(),
+    .required()
+    .matches(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/
+    ),
   Confirm: yup
     .string()
-    .min(8)
     .max(50)
-    .required(),
+    .required()
+    .matches(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/
+    ),
   UserType: yup.string().required(),
 });
 

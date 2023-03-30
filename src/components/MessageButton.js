@@ -16,7 +16,7 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import Send from "@mui/icons-material/Send";
-import { useState, useEffect, useRef, useLayoutEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Axios from "axios";
 import "../styles/Messages.css";
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
@@ -58,7 +58,6 @@ function MessageButton(props) {
   };
 
   const closeError = () => {
-    setSnackError("Profanity detected. Message cannot be sent.");
     setErrorMsg(false);
   };
 
@@ -68,14 +67,12 @@ function MessageButton(props) {
       (contact) => contact.email === email
     );
     setSelectedUser(filteredUser);
-
     const participants = [...filteredUser];
     participants.push(currentUser);
 
     if (chatData.length === 0) {
       createChat(participants);
     } else {
-      console.log(chatData);
       const checkedArr = [];
       chatData.forEach((chat) => {
         const check = checkEqual(chat.participants, participants);
@@ -93,6 +90,7 @@ function MessageButton(props) {
                 search: false,
                 selectedUser: true,
                 showPrevMessages: true,
+                noPrevMessages: false,
                 messages: false,
               });
             } else if (chatData[i].messages.length === 0) {
@@ -146,9 +144,9 @@ function MessageButton(props) {
       chatid: chatId,
     };
 
-    Axios.post("http://localhost:3001/getChat", data)
+    Axios.post("http://localhost:3001/getCurrentChat", data)
       .then((res) => {
-        console.log(res);
+        console.log(res.status);
         setCurrentChat(res.data);
       })
       .catch((e) => console.error(e));
@@ -162,17 +160,20 @@ function MessageButton(props) {
         search: false,
         selectedUser: false,
       });
-    } else if (searchResults.length > 0) {
+    }
+    if (searchResults.length > 0) {
       setDisplay({
         ...display,
         search: true,
         selectedUser: false,
       });
     }
+
+    getUsersChats(currentUser.email)
+
   };
 
   const sendMessage = (data) => {
-    console.log(data);
     Axios.post("http://localhost:3001/sendMessage", data)
       .then((res) => {
         console.log(res);
@@ -210,12 +211,10 @@ function MessageButton(props) {
     };
 
     const validate = await messageSchema.isValid(data);
-    console.log(validate)
 
     if (validate === true) {
       Axios.post("http://localhost:3001/checkProfanity", data)
         .then((result) => {
-          console.log(data);
           if (result.data.includes(1)) {
             //console.log(result);
 
@@ -236,36 +235,42 @@ function MessageButton(props) {
 
   const handleProfanity = () => {
     setErrorMsg(true);
+    setSnackError("Profanity detected. Message cannot be sent.");
     setMessage("");
   };
 
+
   const getUsersContacts = () => {
     const userContactsArr = [];
+    // for each group
     props.groups.forEach((group) => {
+
+      // checks if creators email already exists in userContactsArr
       const checkCreator = userContactsArr.some(
         (item) => item.email === group.creator.email
       );
+      // if it doesnt and its not the email of the current user, 
+      // push creators data to the array
       if (checkCreator === false && currentUser.email != group.creator.email) {
         userContactsArr.push(group.creator);
       }
 
+      // do the same for each memeber of the group
       for (let i = 0; i < group.members.length; i++) {
         const userData = {
           email: group.members[i].email,
           fname: group.members[i].fname,
           sname: group.members[i].sname,
         };
-
         const checkArr = userContactsArr.some(
           (item) => item.email === userData.email
         );
-
         if (checkArr === false && currentUser.email != userData.email) {
           userContactsArr.push(userData);
         }
       }
     });
-    console.log(userContactsArr);
+    // set array as state variable
     setUsersContacts(userContactsArr);
   };
 
@@ -307,11 +312,10 @@ function MessageButton(props) {
   };
 
   const getUsersChats = (uid) => {
-    //console.log(uid)
     const data = {
       userid: uid,
     };
-    Axios.post("http://localhost:3001/getChats", data)
+    Axios.post("http://localhost:3001/getAllChats", data)
       .then((response) => {
         setChatData(response.data);
         console.log(response);
@@ -404,7 +408,7 @@ function MessageButton(props) {
             ))}
             <List id="chatBody">
               {display.noPrevMessages && (
-                <Grid item lg={12} md={12} xs={12} id='text'>
+                <Grid item lg={12} md={12} xs={12} id="text">
                   <p>No previous messages</p>
                 </Grid>
               )}
@@ -424,7 +428,7 @@ function MessageButton(props) {
                 </Grid>
               )}
             </List>
-            <IconButton onClick={scrollChat}>
+            <IconButton onClick={scrollChat} id="sendMessage">
               <ArrowCircleDownIcon />
             </IconButton>
             <ListItem id="sendMessage">

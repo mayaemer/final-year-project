@@ -8,8 +8,8 @@ import { Link } from "react-router-dom";
 import { registrationSchema } from "../Validations/Validation";
 import "../styles/register.css";
 
-// this page is empty at this point
 function Register() {
+  // options for menu items
   const usertype = [
     {
       value: "Teacher",
@@ -21,6 +21,7 @@ function Register() {
     },
   ];
 
+  // states
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -31,9 +32,11 @@ function Register() {
   const [errorVisbility, setErrorVisibility] = useState(false);
   const [successVisbility, setSuccessVisibility] = useState(false);
 
+  // handle form submit
   const handleSubmit = async (event) => {
     event.preventDefault();
 
+    // registration data object
     const registrationData = {
       Email: email,
       Fname: firstName,
@@ -43,24 +46,29 @@ function Register() {
       UserType: userType,
     };
 
+    // validate data against schema
     const validate = await registrationSchema.isValid(registrationData);
 
+    // if validation successful, send data in POST request to be stored
     if (validate === true) {
       setErrorMessage("");
       try {
         Axios.post("http://localhost:3001/register", registrationData).then(
           function (res) {
+            // if successfully stored, show success message, set text field values to empty strings
             if (res.data.message == "Success") {
               setSuccessVisibility(true);
               setErrorVisibility(false);
-
               setEmail("");
               setFirstName("");
               setSurName("");
               setPassword("");
               setConfirmPassword("");
               setUserType("");
-            } else {
+            }
+            // if failed, display error message
+            else {
+              setSuccessVisibility(false);
               setErrorVisibility(true);
               setErrorMessage(res.data.message);
             }
@@ -69,9 +77,13 @@ function Register() {
       } catch (e) {
         console.error(e);
       }
-    } else {
+    }
+    // if validation failed, display error message
+    else {
       setErrorVisibility(true);
-      setErrorMessage("Data not valid");
+      setErrorMessage(
+        "Data not valid! Please ensure all sections are filled out. Passwords must contain 8 characters, one uppercase, one lowercase, one number and one special case character. Please ensure that your passwords match."
+      );
     }
   };
 
@@ -83,7 +95,7 @@ function Register() {
           <form onSubmit={(e) => handleSubmit(e)}>
             <Grid item lg={12} md={12} xs={12} id="input">
               <TextField
-                id="outlined-basic"
+                id="firstname-reg"
                 label="First Name"
                 variant="outlined"
                 value={firstName}
@@ -93,7 +105,7 @@ function Register() {
 
             <Grid item lg={12} md={12} xs={12} id="input">
               <TextField
-                id="outlined-basic"
+                id="lastname-reg"
                 label="Surname"
                 variant="outlined"
                 value={surName}
@@ -102,7 +114,7 @@ function Register() {
             </Grid>
             <Grid item lg={12} md={12} xs={12} id="input">
               <TextField
-                id="outlined-basic"
+                id="email-reg"
                 label="Email"
                 variant="outlined"
                 value={email}
@@ -111,7 +123,7 @@ function Register() {
             </Grid>
             <Grid item lg={12} md={12} xs={12} id="input">
               <TextField
-                id="outlined-password-input"
+                id="pw-reg"
                 label="Password"
                 type="password"
                 value={password}
@@ -121,7 +133,7 @@ function Register() {
 
             <Grid item lg={12} md={12} xs={12} id="input">
               <TextField
-                id="outlined-password-input"
+                id="confirm-reg"
                 label="Confirm Password"
                 type="password"
                 value={confirmPassword}
@@ -131,7 +143,7 @@ function Register() {
 
             <Grid item lg={12} md={12} xs={12} id="input">
               <TextField
-                id="outlined-select-usertype"
+                id="usertype-reg"
                 select
                 label="Select"
                 defaultValue=""
@@ -150,11 +162,13 @@ function Register() {
             <Button type="submit" variant="outlined" id="input">
               Register
             </Button>
-            <Grid>
-              <p>
-                Already have an account? <Link to="/">Login here</Link>
-              </p>
-            </Grid>
+            {!successVisbility && (
+              <Grid>
+                <p>
+                  Already have an account? <Link to="/">Login here</Link>
+                </p>
+              </Grid>
+            )}
             {successVisbility && (
               <Alert severity="success" id="alert">
                 Registration successful.

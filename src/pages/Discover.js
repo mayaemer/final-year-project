@@ -54,7 +54,6 @@ function Discover() {
   };
 
   const handleSearch = async (searchItem) => {
-    //console.log(searchItem);
 
     let searchData = {
       searchData: searchItem,
